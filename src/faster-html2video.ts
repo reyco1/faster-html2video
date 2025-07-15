@@ -724,6 +724,9 @@ export class FasterHTML2Video {
       if (config.waitForStartSignal) {
         console.log(`   Waiting for start signal from page...`);
       }
+      if (config.useVirtualTime) {
+        console.log(`   Note: Virtual time is not recommended with recording control`);
+      }
     }
 
     try {

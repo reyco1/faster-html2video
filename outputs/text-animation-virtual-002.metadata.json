@@ -1,0 +1,19 @@
+{
+  "generationTime": 14.283612791,
+  "processingSpeed": 6.440947493197837,
+  "generationTimeRatio": 4.657699823152173,
+  "totalFrames": 92,
+  "capturedFrames": 92,
+  "skippedFrames": 0,
+  "duration": 3.066666666666667,
+  "recordingControlEnabled": true,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 0.6896171569824219,
+  "fileSizeBytes": 723116,
+  "codec": "vp9",
+  "quality": 23,
+  "outputFile": "outputs/text-animation-virtual-002.webm",
+  "timestamp": "2025-07-15T18:03:26.955Z"
+}

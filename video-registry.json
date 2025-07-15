@@ -1,6 +1,19 @@
 {
   "videos": [
     {
+      "filename": "text-animation-virtual-002.webm",
+      "path": "outputs/text-animation-virtual-002.webm",
+      "metadataPath": "outputs/text-animation-virtual-002.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T18:03:26.955Z",
+      "duration": 3.066666666666667,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 0.6896171569824219,
+      "processingSpeed": 6.440947493197837,
+      "generationTimeRatio": 4.657699823152173
+    },
+    {
       "filename": "highenergy-001.webm",
       "path": "outputs/highenergy-001.webm",
       "metadataPath": "outputs/highenergy-001.metadata.json",
@@ -147,5 +160,5 @@
       "processingSpeed": 7.655544923149627
     }
   ],
-  "lastUpdated": "2025-07-15T18:00:22.540Z"
+  "lastUpdated": "2025-07-15T18:03:26.959Z"
 }

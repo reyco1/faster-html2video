@@ -81,7 +81,7 @@ async function runCapture(url: string, output: string, options: any): Promise<vo
     enableRecordingControl: options.enableRecordingControl || false,
     waitForStartSignal: options.waitForStartSignal || false,
     maxRecordingDuration: options.maxRecordingDuration ? parseFloat(options.maxRecordingDuration) : undefined,
-    useVirtualTime: options.virtualTime !== false,  // Default to true
+    useVirtualTime: options.virtualTime !== false && !options.enableRecordingControl,  // Disabled with recording control
     verbose: options.verbose || false
   };
 
