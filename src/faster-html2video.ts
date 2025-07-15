@@ -744,6 +744,11 @@ export class FasterHTML2Video {
         deviceScaleFactor: 1
       });
 
+      // Set up recording control BEFORE navigating to the page
+      if (config.enableRecordingControl) {
+        await this.setupRecordingControl(page, config);
+      }
+
       console.log('   Navigating to URL...');
       await page.goto(config.url, { 
         waitUntil: 'networkidle0',
@@ -767,11 +772,6 @@ export class FasterHTML2Video {
         console.log('Body background:', window.getComputedStyle(document.body).backgroundColor);
         console.log('Stage background:', stage ? window.getComputedStyle(stage).backgroundColor : 'no stage');
       }, config.stageSelector || '#stage');
-
-      // Set up recording control if enabled
-      if (config.enableRecordingControl) {
-        await this.setupRecordingControl(page, config);
-      }
 
       const delay = config.startDelay ? config.startDelay * 1000 : 1000;
       await new Promise(resolve => setTimeout(resolve, delay));
