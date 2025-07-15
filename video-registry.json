@@ -1,0 +1,89 @@
+{
+  "videos": [
+    {
+      "filename": "05-sec-001.webm",
+      "path": "outputs/05-sec-001.webm",
+      "metadataPath": "outputs/05-sec-001.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T03:31:31.387Z",
+      "duration": 5,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 4.985814094543457,
+      "processingSpeed": 6.83876892174806
+    },
+    {
+      "filename": "test-memory-mgmt.webm",
+      "path": "outputs/test-memory-mgmt.webm",
+      "metadataPath": "outputs/test-memory-mgmt.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T03:29:54.321Z",
+      "duration": 10,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 2.267810821533203,
+      "processingSpeed": 9.337314477384188
+    },
+    {
+      "filename": "test-progress-recording.webm",
+      "path": "outputs/test-progress-recording.webm",
+      "metadataPath": "outputs/test-progress-recording.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T03:27:04.751Z",
+      "duration": 20,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 0.1941967010498047,
+      "processingSpeed": 9.484354877297173
+    },
+    {
+      "filename": "120-sec-001.webm",
+      "path": "outputs/120-sec-001.webm",
+      "metadataPath": "outputs/120-sec-001.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T03:24:47.754Z",
+      "duration": 120,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 115.57730960845947,
+      "processingSpeed": 7.106204487466722
+    },
+    {
+      "filename": "test-progress-bar.webm",
+      "path": "outputs/test-progress-bar.webm",
+      "metadataPath": "outputs/test-progress-bar.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T03:23:49.560Z",
+      "duration": 5,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 0.9162683486938477,
+      "processingSpeed": 7.121532871110616
+    },
+    {
+      "filename": "60-sec-001.webm",
+      "path": "outputs/60-sec-001.webm",
+      "metadataPath": "outputs/60-sec-001.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T03:15:34.456Z",
+      "duration": 60,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 57.80432319641113,
+      "processingSpeed": 7.122738075288128
+    },
+    {
+      "filename": "30-sec-001.webm",
+      "path": "outputs/30-sec-001.webm",
+      "metadataPath": "outputs/30-sec-001.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T03:04:21.854Z",
+      "duration": 30,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 28.39754295349121,
+      "processingSpeed": 7.655544923149627
+    }
+  ],
+  "lastUpdated": "2025-07-15T03:31:31.390Z"
+}

@@ -1,0 +1,18 @@
+{
+  "generationTime": 21.062881084,
+  "processingSpeed": 7.121532871110616,
+  "totalFrames": 150,
+  "capturedFrames": 150,
+  "skippedFrames": 0,
+  "duration": 5,
+  "recordingControlEnabled": false,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 0.9162683486938477,
+  "fileSizeBytes": 960777,
+  "codec": "vp9",
+  "quality": 23,
+  "outputFile": "outputs/test-progress-bar.webm",
+  "timestamp": "2025-07-15T03:23:49.560Z"
+}

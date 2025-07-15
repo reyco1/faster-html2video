@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recording Control Example - faster-html2video</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: Arial, sans-serif;
+        }
+        
+        #stage {
+            width: 1920px;
+            height: 1080px;
+            position: relative;
+            background: transparent;
+            overflow: hidden;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            z-index: 1000;
+        }
+        
+        .controls button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            transition: all 0.3s;
+        }
+        
+        .controls button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .controls button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+        
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .animation-box {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-radius: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        @keyframes rotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+        
+        .rotating {
+            animation: rotate 3s linear infinite;
+        }
+        
+        .pulsing {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .recording-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 20px;
+            height: 20px;
+            background: red;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .recording-indicator.active {
+            opacity: 1;
+            animation: blink 1s ease-in-out infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div id="stage">
+        <div class="controls">
+            <h2>Recording Control Demo</h2>
+            <button id="startBtn" onclick="startRecording()">Start Recording</button>
+            <button id="pauseBtn" onclick="pauseRecording()" disabled>Pause</button>
+            <button id="resumeBtn" onclick="resumeRecording()" disabled>Resume</button>
+            <button id="stopBtn" onclick="stopRecording()" disabled>Stop</button>
+            <div id="status">Status: Not Started</div>
+        </div>
+        
+        <div class="animation-box" id="animBox"></div>
+        <div class="recording-indicator" id="recordingIndicator"></div>
+    </div>
+    
+    <script>
+        let isRecording = false;
+        let isPaused = false;
+        let animationClass = 'rotating';
+        
+        // Check if recording control is available
+        if (typeof window.__recordingControl === 'undefined') {
+            document.getElementById('status').textContent = 'Recording control not available. Run with --enable-recording-control flag.';
+            document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+        }
+        
+        async function startRecording() {
+            try {
+                const response = await window.__recordingControl('start');
+                console.log('Start response:', response);
+                
+                if (response.status === 'started') {
+                    isRecording = true;
+                    isPaused = false;
+                    updateUI();
+                    
+                    // Start animation
+                    document.getElementById('animBox').classList.add(animationClass);
+                    
+                    // Auto-stop after 10 seconds for demo
+                    setTimeout(() => {
+                        if (isRecording) {
+                            console.log('Auto-stopping after 10 seconds...');
+                            stopRecording();
+                        }
+                    }, 10000);
+                }
+            } catch (err) {
+                console.error('Start error:', err);
+                document.getElementById('status').textContent = 'Error: ' + err.message;
+            }
+        }
+        
+        async function pauseRecording() {
+            try {
+                const response = await window.__recordingControl('pause');
+                console.log('Pause response:', response);
+                
+                if (response.status === 'paused') {
+                    isPaused = true;
+                    updateUI();
+                    
+                    // Pause animation
+                    document.getElementById('animBox').style.animationPlayState = 'paused';
+                }
+            } catch (err) {
+                console.error('Pause error:', err);
+            }
+        }
+        
+        async function resumeRecording() {
+            try {
+                const response = await window.__recordingControl('resume');
+                console.log('Resume response:', response);
+                
+                if (response.status === 'resumed') {
+                    isPaused = false;
+                    updateUI();
+                    
+                    // Resume animation
+                    document.getElementById('animBox').style.animationPlayState = 'running';
+                }
+            } catch (err) {
+                console.error('Resume error:', err);
+            }
+        }
+        
+        async function stopRecording() {
+            try {
+                const response = await window.__recordingControl('stop');
+                console.log('Stop response:', response);
+                
+                if (response.status === 'stopped') {
+                    isRecording = false;
+                    isPaused = false;
+                    updateUI();
+                    
+                    // Stop animation
+                    document.getElementById('animBox').classList.remove(animationClass);
+                }
+            } catch (err) {
+                console.error('Stop error:', err);
+            }
+        }
+        
+        async function getStatus() {
+            try {
+                const response = await window.__recordingControl('status');
+                console.log('Status:', response);
+                return response;
+            } catch (err) {
+                console.error('Status error:', err);
+                return null;
+            }
+        }
+        
+        function updateUI() {
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resumeBtn = document.getElementById('resumeBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const status = document.getElementById('status');
+            const indicator = document.getElementById('recordingIndicator');
+            
+            if (!isRecording) {
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                resumeBtn.disabled = true;
+                stopBtn.disabled = true;
+                status.textContent = 'Status: Not Recording';
+                indicator.classList.remove('active');
+            } else if (isPaused) {
+                startBtn.disabled = true;
+                pauseBtn.disabled = true;
+                resumeBtn.disabled = false;
+                stopBtn.disabled = false;
+                status.textContent = 'Status: Paused';
+                indicator.classList.remove('active');
+            } else {
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                resumeBtn.disabled = true;
+                stopBtn.disabled = false;
+                status.textContent = 'Status: Recording';
+                indicator.classList.add('active');
+            }
+        }
+        
+        // Alternative: Use console messages (works even without exposeFunction)
+        function startRecordingViaConsole() {
+            console.log('RECORDING:START');
+        }
+        
+        function stopRecordingViaConsole() {
+            console.log('RECORDING:STOP');
+        }
+        
+        // Switch animation on click
+        document.getElementById('animBox').addEventListener('click', () => {
+            const box = document.getElementById('animBox');
+            box.classList.remove(animationClass);
+            animationClass = animationClass === 'rotating' ? 'pulsing' : 'rotating';
+            
+            // Force reflow
+            void box.offsetWidth;
+            
+            box.classList.add(animationClass);
+        });
+        
+        // Initial UI state
+        updateUI();
+        
+        // Log instructions
+        console.log('=== Recording Control Example ===');
+        console.log('Run with: npx faster-html2video example-recording-control.html output.webm --enable-recording-control --wait-for-start-signal');
+        console.log('Click buttons to control recording, or use console commands:');
+        console.log('  console.log("RECORDING:START")');
+        console.log('  console.log("RECORDING:STOP")');
+    </script>
+</body>
+</html>

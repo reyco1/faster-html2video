@@ -1,0 +1,18 @@
+{
+  "generationTime": 117.56184687499999,
+  "processingSpeed": 7.655544923149627,
+  "totalFrames": 900,
+  "capturedFrames": 900,
+  "skippedFrames": 0,
+  "duration": 30,
+  "recordingControlEnabled": false,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 28.39754295349121,
+  "fileSizeBytes": 29776982,
+  "codec": "vp9",
+  "quality": 23,
+  "outputFile": "outputs/30-sec-001.webm",
+  "timestamp": "2025-07-15T03:04:21.854Z"
+}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Progress Bar Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: Arial, sans-serif;
+        }
+        
+        #stage {
+            width: 1920px;
+            height: 1080px;
+            background: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .moving-box {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff);
+            position: absolute;
+            border-radius: 20px;
+            animation: moveAround 3s ease-in-out infinite;
+        }
+        
+        @keyframes moveAround {
+            0% { transform: translate(100px, 100px) rotate(0deg); }
+            25% { transform: translate(1620px, 100px) rotate(90deg); }
+            50% { transform: translate(1620px, 780px) rotate(180deg); }
+            75% { transform: translate(100px, 780px) rotate(270deg); }
+            100% { transform: translate(100px, 100px) rotate(360deg); }
+        }
+        
+        .title {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 20px rgba(0,0,0,0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <div id="stage">
+        <div class="moving-box"></div>
+        <div class="title">Progress Bar Demo</div>
+    </div>
+</body>
+</html>

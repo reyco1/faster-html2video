@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>faster-html2video Test - High Energy Animation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            width: 1920px; 
+            height: 1080px; 
+            background: transparent;
+            overflow: hidden;
+        }
+        
+        #stage { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 1920px; 
+            height: 1080px; 
+            background: transparent; 
+        }
+        
+        .ball {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        
+        #ball1 {
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #ee5a24);
+            top: 200px;
+            left: 100px;
+        }
+        
+        #ball2 {
+            background: radial-gradient(circle at 30% 30%, #4ecdc4, #44a3aa);
+            top: 400px;
+            left: 100px;
+        }
+        
+        #ball3 {
+            background: radial-gradient(circle at 30% 30%, #ffe66d, #ffd93d);
+            top: 600px;
+            left: 100px;
+        }
+        
+        #ball4 {
+            background: radial-gradient(circle at 30% 30%, #a8e6cf, #7fcdbb);
+            top: 800px;
+            left: 100px;
+        }
+        
+        .text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+            font-family: Arial, sans-serif;
+            z-index: 10;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+        }
+        
+        .streak {
+            position: absolute;
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #fff, transparent);
+            opacity: 0;
+        }
+        
+        .ring {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="stage">
+        <!-- Rings for visual effect -->
+        <div class="ring" id="ring1"></div>
+        <div class="ring" id="ring2"></div>
+        <div class="ring" id="ring3"></div>
+        
+        <!-- Streaks -->
+        <div class="streak" style="top: 20%; left: -200px;"></div>
+        <div class="streak" style="top: 40%; left: -200px;"></div>
+        <div class="streak" style="top: 60%; left: -200px;"></div>
+        <div class="streak" style="top: 80%; left: -200px;"></div>
+        
+        <!-- Main balls -->
+        <div class="ball" id="ball1"></div>
+        <div class="ball" id="ball2"></div>
+        <div class="ball" id="ball3"></div>
+        <div class="ball" id="ball4"></div>
+        
+        <!-- Center text -->
+        <div class="text" id="mainText">⚡ FAST! ⚡</div>
+        
+        <!-- Particles -->
+        <div class="particle" style="top: 30%; left: 20%;"></div>
+        <div class="particle" style="top: 70%; left: 30%;"></div>
+        <div class="particle" style="top: 50%; left: 70%;"></div>
+        <div class="particle" style="top: 20%; left: 80%;"></div>
+        <div class="particle" style="top: 80%; left: 60%;"></div>
+        <div class="particle" style="top: 40%; left: 40%;"></div>
+        <div class="particle" style="top: 60%; left: 90%;"></div>
+        <div class="particle" style="top: 10%; left: 50%;"></div>
+    </div>
+    
+    <script>
+        // Main timeline
+        const mainTl = gsap.timeline({ repeat: -1 });
+        
+        // Ball animations - rapid movement
+        const ballDuration = 0.8;
+        
+        // Ball 1 - zigzag pattern
+        mainTl.to("#ball1", {
+            x: 1700,
+            y: 300,
+            duration: ballDuration,
+            ease: "power2.inOut"
+        })
+        .to("#ball1", {
+            x: 0,
+            y: -300,
+            duration: ballDuration,
+            ease: "power2.inOut"
+        });
+        
+        // Ball 2 - opposite zigzag
+        mainTl.to("#ball2", {
+            x: 1700,
+            y: -200,
+            duration: ballDuration * 0.9,
+            ease: "power3.inOut"
+        }, 0)
+        .to("#ball2", {
+            x: 0,
+            y: 200,
+            duration: ballDuration * 0.9,
+            ease: "power3.inOut"
+        });
+        
+        // Ball 3 - curved path
+        mainTl.to("#ball3", {
+            x: 850,
+            y: -400,
+            duration: ballDuration * 0.5,
+            ease: "power2.out"
+        }, 0)
+        .to("#ball3", {
+            x: 1700,
+            y: 0,
+            duration: ballDuration * 0.5,
+            ease: "power2.in"
+        })
+        .to("#ball3", {
+            x: 850,
+            y: -400,
+            duration: ballDuration * 0.5,
+            ease: "power2.out"
+        })
+        .to("#ball3", {
+            x: 0,
+            y: 0,
+            duration: ballDuration * 0.5,
+            ease: "power2.in"
+        });
+        
+        // Ball 4 - straight fast movement
+        mainTl.to("#ball4", {
+            x: 1700,
+            duration: ballDuration * 0.6,
+            ease: "none",
+            repeat: 1,
+            yoyo: true
+        }, 0);
+        
+        // Spinning balls
+        gsap.to(".ball", {
+            rotation: 720,
+            duration: 1,
+            ease: "none",
+            repeat: -1
+        });
+        
+        // Text animations
+        gsap.to("#mainText", {
+            scale: 1.2,
+            duration: 0.2,
+            ease: "power2.inOut",
+            repeat: -1,
+            yoyo: true
+        });
+        
+        gsap.to("#mainText", {
+            rotation: 10,
+            duration: 0.1,
+            ease: "none",
+            repeat: -1,
+            yoyo: true
+        });
+        
+        // Particle explosions
+        gsap.to(".particle", {
+            opacity: 1,
+            scale: 3,
+            x: "random(-200, 200)",
+            y: "random(-200, 200)",
+            duration: 0.5,
+            stagger: 0.05,
+            repeat: -1,
+            repeatDelay: 0.5,
+            ease: "power2.out"
+        });
+        
+        // Streaks animation
+        gsap.to(".streak", {
+            x: 2200,
+            opacity: 0.8,
+            duration: 0.4,
+            stagger: 0.1,
+            repeat: -1,
+            ease: "power4.in"
+        });
+        
+        // Ring pulses
+        gsap.to("#ring1", {
+            scale: 2,
+            opacity: 0.5,
+            duration: 1,
+            repeat: -1,
+            ease: "power2.out"
+        });
+        
+        gsap.to("#ring2", {
+            scale: 2.5,
+            opacity: 0.3,
+            duration: 1.2,
+            repeat: -1,
+            ease: "power2.out",
+            delay: 0.3
+        });
+        
+        gsap.to("#ring3", {
+            scale: 3,
+            opacity: 0.2,
+            duration: 1.4,
+            repeat: -1,
+            ease: "power2.out",
+            delay: 0.6
+        });
+        
+        // Color flashing on balls
+        gsap.to(".ball", {
+            filter: "brightness(2) saturate(1.5)",
+            duration: 0.1,
+            repeat: -1,
+            yoyo: true,
+            stagger: 0.05
+        });
+        
+        // Background flashes
+        gsap.to("body", {
+            backgroundColor: "#2a2a2a",
+            duration: 0.2,
+            repeat: -1,
+            yoyo: true,
+            repeatDelay: 1
+        });
+        
+        // Seek function for video capture
+        window.seekToTime = function(time) { 
+            return new Promise(resolve => {
+                const loopDuration = mainTl.duration();
+                mainTl.time(time % loopDuration);
+                gsap.globalTimeline.time(time);
+                requestAnimationFrame(resolve);
+            });
+        };
+        
+        window.getAnimationState = function() { 
+            return { 
+                progress: mainTl.progress(), 
+                time: mainTl.time(),
+                duration: mainTl.duration()
+            }; 
+        };
+        
+        console.log('High-energy animation ready! Duration:', mainTl.duration());
+    </script>
+</body>
+</html>
