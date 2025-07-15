@@ -752,12 +752,12 @@ export class FasterHTML2Video {
       console.log('   Page loaded!');
       
       // Make the page background transparent for capture
-      await page.evaluate(() => {
+      await page.evaluate((stageSelector) => {
         document.body.style.background = 'transparent';
         document.documentElement.style.background = 'transparent';
         
         // Also ensure the stage has transparent background
-        const stage = document.querySelector('#stage') as HTMLElement;
+        const stage = document.querySelector(stageSelector) as HTMLElement;
         if (stage) {
           stage.style.background = 'transparent';
           stage.style.backgroundColor = 'transparent';
@@ -766,7 +766,7 @@ export class FasterHTML2Video {
         // Log what we're capturing for debugging
         console.log('Body background:', window.getComputedStyle(document.body).backgroundColor);
         console.log('Stage background:', stage ? window.getComputedStyle(stage).backgroundColor : 'no stage');
-      });
+      }, config.stageSelector || '#stage');
 
       // Set up recording control if enabled
       if (config.enableRecordingControl) {
