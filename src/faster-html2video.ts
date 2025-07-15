@@ -770,6 +770,13 @@ export class FasterHTML2Video {
       });
       console.log('   Page loaded!');
       
+      // If using virtual time, advance time a bit to let initial scripts run
+      if (config.useVirtualTime) {
+        console.log('   Advancing virtual time for initialization...');
+        await advanceTime(page, 100); // Advance 100ms
+        await new Promise(resolve => setTimeout(resolve, 50)); // Real delay for browser processing
+      }
+      
       // Make the page background transparent for capture
       await page.evaluate((stageSelector) => {
         document.body.style.background = 'transparent';
@@ -846,6 +853,7 @@ export class FasterHTML2Video {
         if (config.useVirtualTime) {
           const targetTimeMs = timestamp * 1000;
           await setTime(page, targetTimeMs);
+          await advanceTime(page, 0); // Trigger any pending timeouts at this exact time
           // Small delay to let the browser process the time change
           await new Promise(resolve => setTimeout(resolve, 10));
         }
@@ -1169,8 +1177,17 @@ export class FasterHTML2Video {
     
     console.log('   ⏳ Waiting for recording start signal...');
     
+    let virtualTimeMs = 100; // Start from where we left off
+    
     while (this.recordingState === RecordingState.NOT_STARTED) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // If using virtual time, advance it to trigger timeouts in the page
+      if (config.useVirtualTime) {
+        await advanceTime(page, 100); // Advance 100ms of virtual time
+        virtualTimeMs += 100;
+        await new Promise(resolve => setTimeout(resolve, 50)); // Real delay for processing
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
       
       if (Date.now() - startWaitTime > maxWaitTime) {
         throw new Error('Timeout waiting for recording start signal');
