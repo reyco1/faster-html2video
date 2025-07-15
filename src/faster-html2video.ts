@@ -707,6 +707,7 @@ export class FasterHTML2Video {
   private recordingStartTime: number = 0;
   private recordingFrames: number[] = [];
   private recordingControlReady: boolean = false;
+  private virtualTimeMs: number = 0;
 
   async capture(config: VideoConfig): Promise<CaptureStats> {
     const startTime = performance.now();
@@ -723,9 +724,6 @@ export class FasterHTML2Video {
       console.log(`   Recording control: ENABLED`);
       if (config.waitForStartSignal) {
         console.log(`   Waiting for start signal from page...`);
-      }
-      if (config.useVirtualTime) {
-        console.log(`   Note: Virtual time is not recommended with recording control`);
       }
     }
 
@@ -783,10 +781,14 @@ export class FasterHTML2Video {
       });
       console.log('   Page loaded!');
       
-      // If using virtual time, advance time a bit to let initial scripts run
+      // If using virtual time, start at time 0
       if (config.useVirtualTime) {
-        console.log('   Advancing virtual time for initialization...');
-        await goToTime(page, 100); // Advance to 100ms to trigger initial timers
+        console.log('   Initializing virtual time at 0...');
+        await page.evaluate(() => {
+          if (window.__timeweb) {
+            window.__timeweb.setTime(0);
+          }
+        });
         await new Promise(resolve => setTimeout(resolve, 50)); // Real delay for browser processing
       }
       
@@ -865,8 +867,18 @@ export class FasterHTML2Video {
         // If using virtual time, advance time to match frame
         if (config.useVirtualTime) {
           const targetTimeMs = timestamp * 1000;
-          // Use goToTime which properly processes all timers and animations
-          await goToTime(page, targetTimeMs);
+          
+          // For recording control, respect the actual elapsed time
+          if (config.enableRecordingControl && this.recordingState === RecordingState.RECORDING) {
+            // Advance virtual time by one frame duration
+            const frameDurationMs = 1000 / fps;
+            this.virtualTimeMs += frameDurationMs;
+            await goToTime(page, this.virtualTimeMs);
+          } else if (!config.enableRecordingControl) {
+            // For non-recording control, go directly to target time
+            await goToTime(page, targetTimeMs);
+            this.virtualTimeMs = targetTimeMs;
+          }
           
           // Small delay to let the browser render
           await new Promise(resolve => setTimeout(resolve, 20));
@@ -1199,13 +1211,11 @@ export class FasterHTML2Video {
     
     console.log('   ⏳ Waiting for recording start signal...');
     
-    let virtualTimeMs = 100; // Start from where we left off
-    
     while (this.recordingState === RecordingState.NOT_STARTED) {
       // If using virtual time, advance it to trigger timeouts in the page
       if (config.useVirtualTime) {
-        virtualTimeMs += 100;
-        await goToTime(page, virtualTimeMs); // Advance to new time
+        this.virtualTimeMs += 100;
+        await goToTime(page, this.virtualTimeMs); // Advance to new time
         await new Promise(resolve => setTimeout(resolve, 50)); // Real delay for processing
       } else {
         await new Promise(resolve => setTimeout(resolve, 100));
