@@ -1,84 +1,78 @@
-# faster-html2video
+# fast-html2video
 
-🚀 **High-performance HTML animation to transparent WebM converter**
+High-performance HTML animation to video converter using virtual time capture.
 
-Convert JavaScript animations (GSAP, canvas, etc.) to high-quality WebM videos with transparency support - **5-15x faster** than traditional tools.
+## Features
 
-## ⚡ Key Features
+- **Frame-perfect capture** - Uses virtual time to ensure no frames are dropped
+- **WebM with transparency** - Outputs VP9-encoded WebM files with alpha channel support
+- **High performance** - Direct memory streaming, no disk I/O for frames
+- **Accurate timing** - Captures exactly the requested duration at the specified framerate
+- **Progress tracking** - Real-time capture progress updates
 
-- 🎭 **Transparent Backgrounds**: Full alpha channel support in WebM output
-- ⚡ **5-15x Faster**: Memory streaming + frame differencing optimizations  
-- 🎯 **Stage-based Capture**: Capture specific elements, not full pages
-- 🎬 **Professional Quality**: VP8/VP9 codecs with configurable quality
-- 🧠 **Smart Frame Differencing**: Skip duplicate frames automatically
-- 💾 **Zero Disk I/O**: Direct memory streaming to FFmpeg
-- 🎮 **GSAP Optimized**: Direct timeline control for smooth animations
-
-## 🛠️ Installation
-
-### Prerequisites
-- **Node.js** 16+ 
-- **FFmpeg** with VP8/VP9 support
+## Installation
 
 ```bash
-# Install FFmpeg
-# macOS: brew install ffmpeg
-# Ubuntu: sudo apt install ffmpeg
-# Windows: choco install ffmpeg
-
-# Install package
 npm install
-npm run build
+npm link  # Optional: to use globally
 ```
 
-## 🎬 Quick Start
+## Usage
+
+### Command Line
 
 ```bash
-# CLI Usage
-npm run build
-npx faster-html2video ./test-animation.html output.webm --duration 10
+fast-html2video <input> <output> [options]
 
-# Or programmatic usage
-npm run example
+# Examples:
+fast-html2video animation.html output.webm -d 30 -f 30
+fast-html2video https://example.com/animation video.webm -d 60 --fps 60
 ```
 
-## 📊 Performance Results
+### Options
 
-| Method | 30s Animation | Processing Rate | Speedup |
-|--------|---------------|-----------------|---------|
-| **faster-html2video** | **~4-6 minutes** | **~300 fps** | **🚀 10-15x** |
-| Traditional timecut | ~60 minutes | ~30 fps | 1x baseline |
+- `-d, --duration <seconds>` - Duration in seconds (default: 5)
+- `-f, --fps <rate>` - Frames per second (default: 60)
+- `-w, --width <pixels>` - Video width (default: 1920)
+- `-h, --height <pixels>` - Video height (default: 1080)
+- `-s, --selector <selector>` - CSS selector for capture area (default: 'body')
+- `-q, --quality <crf>` - Video quality, 0-51, lower is better (default: 23)
+- `--verbose` - Show FFmpeg output
+- `--quiet` - Suppress all output
 
-## 🎭 Transparent Background Setup
+### Programmatic API
 
-Your HTML must include a **stage element**:
+```javascript
+const capture = require('fast-html2video');
 
-```html
-<div id="stage" style="width: 1920px; height: 1080px; background: transparent;">
-    <!-- Your animated content here -->
-</div>
-
-<script>
-// Required: Timeline control function
-window.seekToTime = function(time) {
-    myGSAPTimeline.progress(time / totalDuration);
-    return new Promise(resolve => requestAnimationFrame(resolve));
-};
-</script>
+await capture({
+  url: 'animation.html',
+  output: 'video.webm',
+  duration: 30,
+  fps: 30,
+  selector: '.stage'
+});
 ```
 
-## 📄 License
+## How it Works
 
-MIT License
+fast-html2video uses virtual time control (via the timeweb library) to capture web animations frame-by-frame. Instead of recording in real-time, it:
 
-## 🚀 Getting Started
+1. Loads your HTML page in a headless browser
+2. Overrides all JavaScript timing functions
+3. Steps through time frame-by-frame
+4. Captures each frame as a PNG
+5. Streams frames directly to FFmpeg
+6. Outputs a WebM video with transparency
 
-1. Extract all files to a folder
-2. Run: `npm install`
-3. Run: `npm run build`
-4. Run: `npm run example`
-5. Check the generated `output.webm` file!
+This ensures perfect frame capture regardless of animation complexity or system performance.
 
----
+## Requirements
 
-**faster-html2video** - Professional video generation from web animations. 🎬
+- Node.js 14+
+- FFmpeg with VP9 support
+- Chrome or Chromium
+
+## License
+
+MIT
