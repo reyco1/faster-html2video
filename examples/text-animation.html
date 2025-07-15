@@ -152,7 +152,32 @@
           await setLine(lines[0]);
           initbackground();
 
+          // Start recording after content is loaded
+          if (window.__recordingControl) {
+            console.log("Starting recording...");
+            await window.__recordingControl('start');
+          } else {
+            // Fallback to console-based recording control
+            console.log("RECORDING:START");
+          }
+
           let currentLineIndex = 0;
+          
+          // Calculate total duration based on last word timing
+          const lastWord = wordDataArr[wordDataArr.length - 1];
+          const totalDuration = lastWord.startMS + lastWord.durationMS + delay * 1000;
+          
+          // Schedule recording stop after all animations complete
+          setTimeout(async () => {
+            if (window.__recordingControl) {
+              console.log("Stopping recording...");
+              await window.__recordingControl('stop');
+            } else {
+              // Fallback to console-based recording control
+              console.log("RECORDING:STOP");
+            }
+          }, totalDuration + 1000); // Add 1 second buffer after last word
+          
           wordDataArr.forEach((caption, index) => {
             setTimeout(async () => {
               gsap.killTweensOf(highlight);
@@ -222,6 +247,12 @@
           });
         } catch (error) {
           console.error("Animation failed:", error);
+          // Stop recording on error
+          if (window.__recordingControl) {
+            await window.__recordingControl('stop');
+          } else {
+            console.log("RECORDING:STOP");
+          }
         }
       });
     </script>
