@@ -725,6 +725,7 @@ export class FasterHTML2Video {
       if (config.waitForStartSignal) {
         console.log(`   Waiting for start signal from page...`);
       }
+      console.log(`   Note: Virtual time disabled (incompatible with recording control)`);
     }
 
     try {
@@ -1212,14 +1213,8 @@ export class FasterHTML2Video {
     console.log('   ⏳ Waiting for recording start signal...');
     
     while (this.recordingState === RecordingState.NOT_STARTED) {
-      // If using virtual time, advance it to trigger timeouts in the page
-      if (config.useVirtualTime) {
-        this.virtualTimeMs += 100;
-        await goToTime(page, this.virtualTimeMs); // Advance to new time
-        await new Promise(resolve => setTimeout(resolve, 50)); // Real delay for processing
-      } else {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      // Don't advance virtual time while waiting - keep animations paused at start
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       if (Date.now() - startWaitTime > maxWaitTime) {
         throw new Error('Timeout waiting for recording start signal');
