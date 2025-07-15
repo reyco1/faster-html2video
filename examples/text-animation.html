@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta viewport="width=device-width, initial-scale=1.0" />
+    <title>Highlight Animation With Background</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.0/gsap.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap"
+    />
+    <style>
+      html,
+      body {
+        font-family: "Roboto", sans-serif;
+        font-weight: 700;
+        width: 1920px;
+        height: 1080px;
+        padding: 0px;
+        margin: 0px;
+        background: transparent;
+      }
+
+      .stage {
+        width: 1920px;
+        height: 1080px;
+        background: transparent;
+      }
+
+      .text-stroke {
+        text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div
+      class="stage flex flex-col justify-end items-center pb-24 px-24 relative"
+    >
+      <div
+        class="text-layer text-stroke text-white text-center text-8xl relative z-20"
+      ></div>
+      <div
+        class="highlight absolute inset-0 bg-blue-700 rounded-2xl z-10"
+      ></div>
+      <div
+        class="background absolute inset-0 bg-black opacity-30 rounded-2xl -z-5"
+      ></div>
+    </div>
+    <script>
+      // Hardcoded parameters from URL
+      const jsonPath = "https://assets.vedia.ai/uploads/engine/ai/generative/captions/7a79d1ee2b7ce4e135b55026e85f597b.json";
+      const fontColor = "FFFFFF";
+      const chipColor = "00ff9b";
+      const bgColor = "00000030";
+      const width = 1920;
+      const height = 1080;
+      const startDelay = 1;
+
+      const stage = document.querySelector(".stage");
+      const mainContainer = document.querySelector(".main-container");
+      const textLayer = document.querySelector(".text-layer");
+      const highlight = document.querySelector(".highlight");
+      const background = document.querySelector(".background");
+
+      let delay = startDelay;
+
+      textLayer.classList.add("opacity-0");
+      highlight.classList.add("opacity-0");
+      background.classList.add("opacity-0");
+
+      // Apply hardcoded parameters
+      stage.style.width = `${width}px`;
+      stage.style.height = `${height}px`;
+
+      textLayer.classList.remove("text-white");
+      textLayer.style.color = `#${fontColor}`;
+
+      highlight.classList.remove("bg-blue-700");
+      highlight.style.background = `#${chipColor}`;
+
+      background.classList.remove("bg-black");
+      background.classList.remove("opacity-30");
+      background.style.background = `#${bgColor}`;
+
+      async function createLines(data) {
+        const words = data.words;
+        const originalWords = data.originalText.split(" ");
+        textLayer.innerHTML = originalWords
+          .map(
+            (word, index) =>
+              `<div id="word-${index}" class="inline-block mr-1 last:mr-0 px-4 py-1 text-stroke">${word.toUpperCase()}</div>`
+          )
+          .join("");
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        const lines = [];
+        words.forEach((word, index) => {
+          const wordElement = document.getElementById(`word-${index}`);
+          if (wordElement) {
+            const rect = wordElement.getBoundingClientRect();
+            const lineIndex = lines.findIndex((line) => line.top === rect.top);
+            if (lineIndex !== -1) {
+              lines[lineIndex].elements.push(wordElement);
+            } else {
+              lines.push({ top: rect.top, elements: [wordElement] });
+            }
+          }
+        });
+        return lines;
+      }
+
+      async function setLine(line, waitTime = 10) {
+        if (line) {
+          textLayer.innerHTML = "";
+          textLayer.innerHTML = `<div class="line">${line.elements
+            .map((element) => element.outerHTML)
+            .join("")}</div>`;
+          textLayer.classList.remove("opacity-0");
+        }
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+
+      function getHighLightPos(wordElement, padding = 0) {
+        const rect = wordElement.getBoundingClientRect();
+        const top = rect.top + window.scrollY - 10 - padding;
+        const left = rect.left + window.scrollX - 10 - padding;
+        const width = rect.width + 20 + padding * 2;
+        const height = rect.height + 20 + padding * 2;
+        return [top, left, width, height];
+      }
+
+      function initbackground() {
+        const [_top, _left, _width, _height] = getHighLightPos(textLayer, 10);
+        gsap.to(background, {
+          duration: 0,
+          width: _width,
+          height: _height,
+          top: _top,
+          left: _left,
+        });
+        background.classList.remove("opacity-0");
+      }
+
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          const response = await fetch(jsonPath);
+          const data = await response.json();
+          const wordDataArr = data.words;
+          const lines = await createLines(data);
+
+          await setLine(lines[0]);
+          initbackground();
+
+          let currentLineIndex = 0;
+          wordDataArr.forEach((caption, index) => {
+            setTimeout(async () => {
+              gsap.killTweensOf(highlight);
+              let wordElement = document.getElementById(`word-${index}`);
+              background.classList.remove("opacity-0");
+              if (!!wordElement) {
+                const [top, left, width, height] = getHighLightPos(wordElement);
+                if (index === 0) {
+                  gsap.to(highlight, {
+                    duration: 0,
+                    width,
+                    height,
+                    top,
+                    left,
+                    onstart: () => {
+                      highlight.classList.remove("opacity-0");
+                    },
+                  });
+                } else {
+                  gsap.to(highlight, {
+                    duration: 0.1,
+                    width,
+                    height,
+                    top,
+                    left,
+                  });
+                }
+                const [_top, _left, _width, _height] = getHighLightPos(
+                  textLayer,
+                  10
+                );
+                gsap.to(background, {
+                  duration: 0,
+                  width: _width,
+                  height: _height,
+                  top: _top,
+                  left: _left,
+                });
+              } else {
+                currentLineIndex++;
+                await setLine(lines[currentLineIndex]);
+                wordElement = document.getElementById(`word-${index}`);
+                const [top, left, width, height] = getHighLightPos(wordElement);
+                gsap.to(highlight, {
+                  duration: 0,
+                  width,
+                  height,
+                  top,
+                  left,
+                  onstart: () => {
+                    highlight.classList.remove("opacity-0");
+                  },
+                });
+                const [_top, _left, _width, _height] = getHighLightPos(
+                  textLayer,
+                  10
+                );
+                gsap.to(background, {
+                  duration: 0,
+                  width: _width,
+                  height: _height,
+                  top: _top,
+                  left: _left,
+                });
+              }
+            }, caption.startMS + delay * 1000);
+          });
+        } catch (error) {
+          console.error("Animation failed:", error);
+        }
+      });
+    </script>
+  </body>
+</html>
