@@ -13,6 +13,7 @@ import * as process from 'process';
 import * as cliProgress from 'cli-progress';
 import chalk from 'chalk';
 import { injectVirtualTime, advanceTime, setTime } from './virtual-time';
+import { injectCompleteVirtualTime, goToTime } from './virtual-time-complete';
 
 // Type declarations for page.evaluate context
 declare global {
@@ -24,6 +25,14 @@ declare global {
     __advanceVirtualTime?: (ms: number) => void;
     __setVirtualTime?: (ms: number) => void;
     __getVirtualTime?: () => number;
+    __timeweb?: {
+      goTo: (ms: number) => void;
+      pause: () => void;
+      play: (speed?: number) => void;
+      getTime: () => number;
+      setTime: (ms: number) => void;
+      advanceTime: (ms: number) => void;
+    };
   }
 }
 
@@ -755,7 +764,7 @@ export class FasterHTML2Video {
       // Inject virtual time control if enabled
       if (config.useVirtualTime) {
         console.log('   Injecting virtual time control...');
-        await injectVirtualTime(page);
+        await injectCompleteVirtualTime(page);
       }
 
       // Set up recording control BEFORE navigating to the page
@@ -773,7 +782,7 @@ export class FasterHTML2Video {
       // If using virtual time, advance time a bit to let initial scripts run
       if (config.useVirtualTime) {
         console.log('   Advancing virtual time for initialization...');
-        await advanceTime(page, 100); // Advance 100ms
+        await goToTime(page, 100); // Advance to 100ms to trigger initial timers
         await new Promise(resolve => setTimeout(resolve, 50)); // Real delay for browser processing
       }
       
@@ -852,18 +861,11 @@ export class FasterHTML2Video {
         // If using virtual time, advance time to match frame
         if (config.useVirtualTime) {
           const targetTimeMs = timestamp * 1000;
-          await setTime(page, targetTimeMs);
-          await advanceTime(page, 0); // Trigger any pending timeouts at this exact time
+          // Use goToTime which properly processes all timers and animations
+          await goToTime(page, targetTimeMs);
           
-          // Also call seekToTime if it exists (for GSAP animations)
-          await page.evaluate(async (time) => {
-            if (window.seekToTime) {
-              await window.seekToTime(time);
-            }
-          }, timestamp);
-          
-          // Give more time for complex animations to settle
-          await new Promise(resolve => setTimeout(resolve, 50));
+          // Small delay to let the browser render
+          await new Promise(resolve => setTimeout(resolve, 20));
         }
         
         // Check if we should stop
@@ -1198,8 +1200,8 @@ export class FasterHTML2Video {
     while (this.recordingState === RecordingState.NOT_STARTED) {
       // If using virtual time, advance it to trigger timeouts in the page
       if (config.useVirtualTime) {
-        await advanceTime(page, 100); // Advance 100ms of virtual time
         virtualTimeMs += 100;
+        await goToTime(page, virtualTimeMs); // Advance to new time
         await new Promise(resolve => setTimeout(resolve, 50)); // Real delay for processing
       } else {
         await new Promise(resolve => setTimeout(resolve, 100));
