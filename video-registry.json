@@ -5,12 +5,12 @@
       "path": "outputs/text-animation.webm",
       "metadataPath": "outputs/text-animation.metadata.json",
       "directory": "outputs",
-      "generatedAt": "2025-07-15T16:19:43.943Z",
-      "duration": 0,
+      "generatedAt": "2025-07-15T16:27:22.128Z",
+      "duration": 60,
       "fps": 30,
       "resolution": "1920x1080",
-      "fileSize": 0.000499725341796875,
-      "processingSpeed": 0
+      "fileSize": 1.5340099334716797,
+      "processingSpeed": 9.192229040846403
     },
     {
       "filename": "05-sec-001.webm",
@@ -97,5 +97,5 @@
       "processingSpeed": 7.655544923149627
     }
   ],
-  "lastUpdated": "2025-07-15T16:19:43.946Z"
+  "lastUpdated": "2025-07-15T16:27:22.131Z"
 }

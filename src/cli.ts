@@ -28,6 +28,7 @@ program
   .option('--enable-recording-control', 'Enable recording control via page communication')
   .option('--wait-for-start-signal', 'Wait for explicit start signal from page')
   .option('--max-recording-duration <seconds>', 'Maximum recording duration (default: 300)', '300')
+  .option('--virtual-time', 'Use virtual time to ensure smooth animations (like timecut)')
   .option('--verbose', 'Enable verbose logging')
   .option('--benchmark', 'Run performance benchmark comparison')
   .action(async (url, output, options) => {
@@ -80,6 +81,7 @@ async function runCapture(url: string, output: string, options: any): Promise<vo
     enableRecordingControl: options.enableRecordingControl || false,
     waitForStartSignal: options.waitForStartSignal || false,
     maxRecordingDuration: options.maxRecordingDuration ? parseFloat(options.maxRecordingDuration) : undefined,
+    useVirtualTime: options.virtualTime || false,
     verbose: options.verbose || false
   };
 

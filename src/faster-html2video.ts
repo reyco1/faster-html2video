@@ -12,6 +12,7 @@ import { performance } from 'perf_hooks';
 import * as process from 'process';
 import * as cliProgress from 'cli-progress';
 import chalk from 'chalk';
+import { injectVirtualTime, advanceTime, setTime } from './virtual-time';
 
 // Type declarations for page.evaluate context
 declare global {
@@ -20,6 +21,9 @@ declare global {
     getAnimationState?: () => any;
     mainTimeline?: any;
     __recordingControl?: (action: string, data?: any) => Promise<any>;
+    __advanceVirtualTime?: (ms: number) => void;
+    __setVirtualTime?: (ms: number) => void;
+    __getVirtualTime?: () => number;
   }
 }
 
@@ -157,6 +161,9 @@ export interface VideoConfig {
   enableRecordingControl?: boolean;
   waitForStartSignal?: boolean;
   maxRecordingDuration?: number;
+  
+  // Virtual time control
+  useVirtualTime?: boolean;
   
   // Advanced settings
   verbose?: boolean;
@@ -745,6 +752,12 @@ export class FasterHTML2Video {
         deviceScaleFactor: 1
       });
 
+      // Inject virtual time control if enabled
+      if (config.useVirtualTime) {
+        console.log('   Injecting virtual time control...');
+        await injectVirtualTime(page);
+      }
+
       // Set up recording control BEFORE navigating to the page
       if (config.enableRecordingControl) {
         await this.setupRecordingControl(page, config);
@@ -828,6 +841,14 @@ export class FasterHTML2Video {
       // Recording loop
       while (currentFrame < maxFrames) {
         const timestamp = currentFrame / fps;
+        
+        // If using virtual time, advance time to match frame
+        if (config.useVirtualTime) {
+          const targetTimeMs = timestamp * 1000;
+          await setTime(page, targetTimeMs);
+          // Small delay to let the browser process the time change
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
         
         // Check if we should stop
         if (config.enableRecordingControl && this.recordingState === RecordingState.STOPPED) {
