@@ -1,6 +1,19 @@
 {
   "videos": [
     {
+      "filename": "text-animation-virtual-001.webm",
+      "path": "outputs/text-animation-virtual-001.webm",
+      "metadataPath": "outputs/text-animation-virtual-001.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T17:15:09.840Z",
+      "duration": 13.3,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 1.1276655197143555,
+      "processingSpeed": 7.7018332293678755,
+      "generationTimeRatio": 3.8951765257142856
+    },
+    {
       "filename": "text-animation-virtual.webm",
       "path": "outputs/text-animation-virtual.webm",
       "metadataPath": "outputs/text-animation-virtual.metadata.json",
@@ -121,5 +134,5 @@
       "processingSpeed": 7.655544923149627
     }
   ],
-  "lastUpdated": "2025-07-15T17:03:34.440Z"
+  "lastUpdated": "2025-07-15T17:15:09.862Z"
 }

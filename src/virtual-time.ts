@@ -139,6 +139,11 @@ export const virtualTimeScript = `
   // Function to set virtual time directly
   window.__setVirtualTime = function(ms) {
     virtualTime = ms;
+    
+    // Update GSAP timeline if available
+    if (window.gsap && window.gsap.globalTimeline) {
+      window.gsap.globalTimeline.time(virtualTime / 1000);
+    }
   };
 
   // Function to get current virtual time
@@ -146,17 +151,33 @@ export const virtualTimeScript = `
     return virtualTime;
   };
 
-  // Override GSAP Timeline if it exists
-  if (window.gsap && window.gsap.globalTimeline) {
-    const timeline = window.gsap.globalTimeline;
-    const originalUpdateRoot = timeline._updateRoot;
-    
-    timeline._updateRoot = function() {
-      // Use virtual time for GSAP
-      timeline._time = virtualTime / 1000; // GSAP uses seconds
-      return originalUpdateRoot.call(timeline);
-    };
+  // Function to update GSAP ticker
+  function updateGSAPTicker() {
+    if (window.gsap && window.gsap.ticker) {
+      // Override GSAP's ticker to use virtual time
+      const ticker = window.gsap.ticker;
+      let lastTime = 0;
+      
+      ticker._tick = function() {
+        const currentTime = virtualTime / 1000;
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+        
+        if (deltaTime > 0) {
+          ticker._listeners.forEach(listener => {
+            listener.fn.call(listener.scope, currentTime, deltaTime, ticker.frame);
+          });
+        }
+      };
+    }
   }
+
+  // Try to hook into GSAP immediately
+  updateGSAPTicker();
+  
+  // Also try after a delay in case GSAP loads later
+  setTimeout(updateGSAPTicker, 100);
+  setTimeout(updateGSAPTicker, 500);
 
   console.log('Virtual time control initialized');
 })();

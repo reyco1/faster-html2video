@@ -854,8 +854,16 @@ export class FasterHTML2Video {
           const targetTimeMs = timestamp * 1000;
           await setTime(page, targetTimeMs);
           await advanceTime(page, 0); // Trigger any pending timeouts at this exact time
-          // Small delay to let the browser process the time change
-          await new Promise(resolve => setTimeout(resolve, 10));
+          
+          // Also call seekToTime if it exists (for GSAP animations)
+          await page.evaluate(async (time) => {
+            if (window.seekToTime) {
+              await window.seekToTime(time);
+            }
+          }, timestamp);
+          
+          // Give more time for complex animations to settle
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
         
         // Check if we should stop
