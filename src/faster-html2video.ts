@@ -773,8 +773,9 @@ export class FasterHTML2Video {
       }
 
       console.log('   Navigating to URL...');
+      // When using virtual time, don't wait for network idle as timers are paused
       await page.goto(config.url, { 
-        waitUntil: 'networkidle0',
+        waitUntil: config.useVirtualTime ? 'domcontentloaded' : 'networkidle0',
         timeout: 30000
       });
       console.log('   Page loaded!');
