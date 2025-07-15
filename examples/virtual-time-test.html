@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Virtual Time Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            font-family: Arial, sans-serif;
+        }
+        
+        #stage {
+            width: 1920px;
+            height: 1080px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        #timer {
+            font-size: 200px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        
+        #message {
+            font-size: 60px;
+            color: white;
+            margin-top: 50px;
+            text-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        
+        .pulse {
+            animation: pulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <div id="stage">
+        <div id="timer" class="pulse">0.0</div>
+        <div id="message">Virtual Time Test</div>
+    </div>
+    
+    <script>
+        const timer = document.getElementById('timer');
+        const message = document.getElementById('message');
+        let startTime = Date.now();
+        let frameCount = 0;
+        
+        // Update timer every 100ms
+        setInterval(() => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            timer.textContent = elapsed.toFixed(1);
+            frameCount++;
+            
+            // Change message at specific times
+            if (elapsed >= 2 && elapsed < 4) {
+                message.textContent = "2 seconds passed!";
+            } else if (elapsed >= 4 && elapsed < 6) {
+                message.textContent = "4 seconds passed!";
+            } else if (elapsed >= 6) {
+                message.textContent = "Animation complete!";
+            }
+        }, 100);
+        
+        // Log time for debugging
+        console.log('Start time:', startTime);
+        setTimeout(() => console.log('1 second timeout fired'), 1000);
+        setTimeout(() => console.log('2 second timeout fired'), 2000);
+        setTimeout(() => console.log('3 second timeout fired'), 3000);
+    </script>
+</body>
+</html>

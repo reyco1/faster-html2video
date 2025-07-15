@@ -1,6 +1,30 @@
 {
   "videos": [
     {
+      "filename": "text-animation-virtual.webm",
+      "path": "outputs/text-animation-virtual.webm",
+      "metadataPath": "outputs/text-animation-virtual.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T17:03:34.437Z",
+      "duration": 13.3,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 1.1276655197143555,
+      "processingSpeed": 7.7293180173610345
+    },
+    {
+      "filename": "virtual-time-test.webm",
+      "path": "outputs/virtual-time-test.webm",
+      "metadataPath": "outputs/virtual-time-test.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T17:00:13.480Z",
+      "duration": 10,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 1.4738883972167969,
+      "processingSpeed": 6.985343604243765
+    },
+    {
       "filename": "text-animation.webm",
       "path": "outputs/text-animation.webm",
       "metadataPath": "outputs/text-animation.metadata.json",
@@ -97,5 +121,5 @@
       "processingSpeed": 7.655544923149627
     }
   ],
-  "lastUpdated": "2025-07-15T16:27:22.131Z"
+  "lastUpdated": "2025-07-15T17:03:34.440Z"
 }

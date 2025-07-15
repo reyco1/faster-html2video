@@ -386,6 +386,10 @@
                             <td>${metadata.processingSpeed.toFixed(1)} fps</td>
                         </tr>
                         <tr>
+                            <td>Generation Time Ratio:</td>
+                            <td>${metadata.generationTimeRatio ? metadata.generationTimeRatio.toFixed(2) + 'x' : 'N/A'} ${metadata.generationTimeRatio ? `(${formatTime(metadata.generationTime)} to generate ${metadata.duration}s video)` : ''}</td>
+                        </tr>
+                        <tr>
                             <td>Total Frames:</td>
                             <td>${metadata.totalFrames} frames</td>
                         </tr>

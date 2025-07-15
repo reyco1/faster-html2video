@@ -952,19 +952,26 @@ export class FasterHTML2Video {
       const endTime = performance.now();
       const totalSeconds = (endTime - startTime) / 1000;
 
+      // Calculate video duration and generation time ratio
+      const videoDuration = config.enableRecordingControl ? (currentFrame / (config.fps || 60)) : config.duration;
+      const generationTimeRatio = totalSeconds / videoDuration;
+
       console.log('✅ Capture completed!');
       console.log(`   Total time: ${totalSeconds.toFixed(1)}s`);
       console.log(`   Processing rate: ${(currentFrame / totalSeconds).toFixed(1)} fps`);
+      console.log(`   Generation time ratio: ${generationTimeRatio.toFixed(2)}x (${totalSeconds.toFixed(1)}s to generate ${videoDuration.toFixed(1)}s video)`);
       console.log(`   Output size: ${stats.fileSizeMB.toFixed(1)}MB`);
 
       // Write metadata to JSON file
+      
       const metadata = {
         generationTime: totalSeconds,
         processingSpeed: currentFrame / totalSeconds,
+        generationTimeRatio: generationTimeRatio,
         totalFrames: stats.totalFrames,
         capturedFrames: stats.capturedFrames,
         skippedFrames: stats.skippedFrames,
-        duration: config.enableRecordingControl ? (currentFrame / (config.fps || 60)) : config.duration,
+        duration: videoDuration,
         recordingControlEnabled: config.enableRecordingControl || false,
         fps: config.fps || 60,
         width: config.width || 1920,
@@ -1008,7 +1015,8 @@ export class FasterHTML2Video {
         fps: metadata.fps,
         resolution: `${metadata.width}x${metadata.height}`,
         fileSize: metadata.fileSize,
-        processingSpeed: metadata.processingSpeed
+        processingSpeed: metadata.processingSpeed,
+        generationTimeRatio: metadata.generationTimeRatio
       };
       
       // Remove existing entry if updating
@@ -1215,6 +1223,7 @@ export function createConfig(url: string, output: string, duration: number): Vid
     memoryStreamingEnabled: true,
     codec: 'vp9',
     quality: 23,
-    verbose: true
+    verbose: true,
+    useVirtualTime: true
   };
 }
