@@ -7,6 +7,7 @@ const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const cliProgress = require('cli-progress');
 const { overwriteTime, goToTimeAndAnimateForCapture } = require('./lib/virtual-time');
 
 const defaultFPS = 60;
@@ -139,9 +140,21 @@ module.exports = async function(config) {
     });
   });
 
+  // Create progress bar
+  const progressBar = new cliProgress.SingleBar({
+    format: '{bar} │ {percentage}% │ {value}/{total} frames │ ETA: {eta}s │ {duration}s │ {fps}',
+    barCompleteChar: '\u2588',
+    barIncompleteChar: '\u2591',
+    hideCursor: true
+  });
+
   // Capture frames
   log(`Capturing ${totalFrames} frames at ${fps}fps...`);
   const startTime = Date.now();
+  
+  progressBar.start(totalFrames, 0, {
+    fps: '0.0 fps'
+  });
 
   for (let frameNum = 0; frameNum < totalFrames; frameNum++) {
     const timestamp = frameNum * frameDuration;
@@ -184,16 +197,17 @@ module.exports = async function(config) {
       await new Promise(resolve => ffmpeg.stdin.once('drain', resolve));
     }
     
-    // Progress
-    if ((frameNum + 1) % Math.floor(fps / 2) === 0) { // Update twice per second
-      const elapsed = (Date.now() - startTime) / 1000;
-      const captureRate = (frameNum + 1) / elapsed;
-      const percent = Math.round(((frameNum + 1) / totalFrames) * 100);
-      log(`Progress: ${percent}% (${frameNum + 1}/${totalFrames}) - ${captureRate.toFixed(1)} fps`);
-    }
+    // Update progress
+    const elapsed = (Date.now() - startTime) / 1000;
+    const captureRate = frameNum > 0 ? (frameNum + 1) / elapsed : 0;
+    progressBar.update(frameNum + 1, {
+      fps: `${captureRate.toFixed(1)} fps`
+    });
   }
 
   // Finalize
+  progressBar.stop();
+  
   ffmpeg.stdin.end();
   await ffmpegPromise;
   
@@ -202,10 +216,40 @@ module.exports = async function(config) {
   const elapsed = (Date.now() - startTime) / 1000;
   const captureRate = totalFrames / elapsed;
   
+  // Get file size
+  const stats = fs.statSync(output);
+  const fileSizeMB = stats.size / (1024 * 1024);
+  
+  // Generate metadata
+  const metadata = {
+    generationTime: elapsed,
+    processingSpeed: captureRate,
+    generationTimeRatio: elapsed / duration,
+    totalFrames: totalFrames,
+    capturedFrames: totalFrames,
+    skippedFrames: 0,
+    duration: duration,
+    fps: fps,
+    width: config.width || 1920,
+    height: config.height || 1080,
+    fileSize: fileSizeMB,
+    fileSizeBytes: stats.size,
+    codec: 'vp9',
+    quality: config.quality || 23,
+    outputFile: output,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Write metadata file
+  const metadataPath = output.replace(/\.[^.]+$/, '.metadata.json');
+  fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+  
   log(`\nCompleted!`);
   log(`Total time: ${elapsed.toFixed(1)}s`);
   log(`Capture rate: ${captureRate.toFixed(1)} fps`);
-  log(`Output: ${output}`);
+  log(`Generation time ratio: ${(elapsed / duration).toFixed(2)}x`);
+  log(`Output: ${output} (${fileSizeMB.toFixed(1)}MB)`);
+  log(`Metadata: ${metadataPath}`);
   
   } catch (error) {
     if (browser) {
