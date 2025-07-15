@@ -177,14 +177,20 @@
         return recordingStarted;
       }
 
-      // Try to start recording ASAP
-      tryStartRecording();
-
-      // Also set a timeout fallback
+      // Don't start recording immediately - wait for proper initialization
+      // The tool needs time to set up after exposing the function
+      
+      // Try after a short delay to ensure tool is ready
+      setTimeout(() => {
+        console.log("Initial delay - checking recording status");
+        tryStartRecording();
+      }, 500);
+      
+      // Also set a longer timeout fallback
       setTimeout(() => {
         console.log("Timeout fallback - checking recording status");
         tryStartRecording();
-      }, 1000);
+      }, 2000);
       
       // Try on window load too
       window.addEventListener('load', () => {

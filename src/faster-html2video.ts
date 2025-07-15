@@ -690,6 +690,7 @@ export class FasterHTML2Video {
   private recordingState: RecordingState = RecordingState.NOT_STARTED;
   private recordingStartTime: number = 0;
   private recordingFrames: number[] = [];
+  private recordingControlReady: boolean = false;
 
   async capture(config: VideoConfig): Promise<CaptureStats> {
     const startTime = performance.now();
@@ -1060,6 +1061,12 @@ export class FasterHTML2Video {
     await page.exposeFunction('__recordingControl', async (action: string, data?: any) => {
       console.log(`Recording control: ${action}`, data);
       
+      // If waiting for start signal and not ready yet, queue or ignore commands
+      if (config.waitForStartSignal && !this.recordingControlReady) {
+        console.log(`   ⚠️  Recording control not ready yet, ignoring ${action}`);
+        return { status: 'not_ready', timestamp: Date.now() };
+      }
+      
       switch (action) {
         case 'start':
           if (this.recordingState === RecordingState.NOT_STARTED || this.recordingState === RecordingState.PAUSED) {
@@ -1124,6 +1131,7 @@ export class FasterHTML2Video {
     // Initialize recording state
     if (!config.waitForStartSignal) {
       this.recordingState = RecordingState.RECORDING;
+      this.recordingControlReady = true;
     }
   }
 
@@ -1134,6 +1142,9 @@ export class FasterHTML2Video {
   private async waitForStartSignal(page: puppeteer.Page, config: VideoConfig): Promise<void> {
     const maxWaitTime = 60000; // 60 seconds max wait
     const startWaitTime = Date.now();
+    
+    // Mark recording control as ready to accept commands
+    this.recordingControlReady = true;
     
     console.log('   ⏳ Waiting for recording start signal...');
     

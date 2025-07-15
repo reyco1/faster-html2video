@@ -1,6 +1,18 @@
 {
   "videos": [
     {
+      "filename": "text-animation.webm",
+      "path": "outputs/text-animation.webm",
+      "metadataPath": "outputs/text-animation.metadata.json",
+      "directory": "outputs",
+      "generatedAt": "2025-07-15T16:19:43.943Z",
+      "duration": 0,
+      "fps": 30,
+      "resolution": "1920x1080",
+      "fileSize": 0.000499725341796875,
+      "processingSpeed": 0
+    },
+    {
       "filename": "05-sec-001.webm",
       "path": "outputs/05-sec-001.webm",
       "metadataPath": "outputs/05-sec-001.metadata.json",
@@ -85,5 +97,5 @@
       "processingSpeed": 7.655544923149627
     }
   ],
-  "lastUpdated": "2025-07-15T03:31:31.390Z"
+  "lastUpdated": "2025-07-15T16:19:43.946Z"
 }

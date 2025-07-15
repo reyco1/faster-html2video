@@ -1,0 +1,18 @@
+{
+  "generationTime": 2.614185,
+  "processingSpeed": 0,
+  "totalFrames": 0,
+  "capturedFrames": 0,
+  "skippedFrames": 0,
+  "duration": 0,
+  "recordingControlEnabled": true,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 0.000499725341796875,
+  "fileSizeBytes": 524,
+  "codec": "vp9",
+  "quality": 23,
+  "outputFile": "outputs/text-animation.webm",
+  "timestamp": "2025-07-15T16:19:43.943Z"
+}
