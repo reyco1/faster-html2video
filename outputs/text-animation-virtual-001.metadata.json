@@ -1,19 +1,19 @@
 {
-  "generationTime": 51.805847792,
-  "processingSpeed": 7.7018332293678755,
-  "generationTimeRatio": 3.8951765257142856,
-  "totalFrames": 399,
-  "capturedFrames": 399,
+  "generationTime": 13.934765916,
+  "processingSpeed": 6.458666083271721,
+  "generationTimeRatio": 4.644921972,
+  "totalFrames": 90,
+  "capturedFrames": 90,
   "skippedFrames": 0,
-  "duration": 13.3,
+  "duration": 3,
   "recordingControlEnabled": true,
   "fps": 30,
   "width": 1920,
   "height": 1080,
-  "fileSize": 1.1276655197143555,
-  "fileSizeBytes": 1182443,
+  "fileSize": 0.6423444747924805,
+  "fileSizeBytes": 673547,
   "codec": "vp9",
   "quality": 23,
   "outputFile": "outputs/text-animation-virtual-001.webm",
-  "timestamp": "2025-07-15T17:15:09.840Z"
+  "timestamp": "2025-07-15T18:49:44.497Z"
 }

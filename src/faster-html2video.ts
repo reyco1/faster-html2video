@@ -14,6 +14,7 @@ import * as cliProgress from 'cli-progress';
 import chalk from 'chalk';
 import { injectVirtualTime, advanceTime, setTime } from './virtual-time';
 import { injectCompleteVirtualTime, goToTime } from './virtual-time-complete';
+import { captureVirtualTimeMode } from './virtual-time-capture';
 
 // Type declarations for page.evaluate context
 declare global {
@@ -51,7 +52,7 @@ export interface RecordingControlAction {
 }
 
 // Progress bar utility with awesome styling
-class ProgressBarManager {
+export class ProgressBarManager {
   private bar: cliProgress.SingleBar;
   private startTime: number;
   private lastMemoryUpdate: number = 0;
@@ -196,7 +197,7 @@ export interface FrameState {
   isDifferent: boolean;
 }
 
-class TransparentWebMEncoder {
+export class TransparentWebMEncoder {
   private ffmpegProcess: ChildProcess | null = null;
   private frameCount = 0;
   private startTime = performance.now();
@@ -715,18 +716,10 @@ export class FasterHTML2Video {
     let progressBar: ProgressBarManager | null = null;
     let progressBarStarted = false;
     
-    console.log(`🎬 faster-html2video: Starting capture`);
+    console.log(`🎬 Starting capture`);
     console.log(`   URL: ${config.url}`);
     console.log(`   Output: ${config.output}`);
     console.log(`   Duration: ${config.duration}s @ ${config.fps || 60}fps`);
-    
-    if (config.enableRecordingControl) {
-      console.log(`   Recording control: ENABLED`);
-      if (config.waitForStartSignal) {
-        console.log(`   Waiting for start signal from page...`);
-      }
-      console.log(`   Note: Virtual time disabled (incompatible with recording control)`);
-    }
 
     try {
       console.log('   Launching browser...');
@@ -763,35 +756,26 @@ export class FasterHTML2Video {
         deviceScaleFactor: 1
       });
 
-      // Inject virtual time control if enabled
-      if (config.useVirtualTime) {
-        console.log('   Injecting virtual time control...');
-        await injectCompleteVirtualTime(page);
-      }
-
-      // Set up recording control BEFORE navigating to the page
-      if (config.enableRecordingControl) {
-        await this.setupRecordingControl(page, config);
-      }
+      // Always inject virtual time control for deterministic capture
+      console.log('   Injecting virtual time control...');
+      await injectCompleteVirtualTime(page);
 
       console.log('   Navigating to URL...');
-      // When using virtual time, don't wait for network idle as timers are paused
+      // Don't wait for network idle as timers are paused in virtual time
       await page.goto(config.url, { 
-        waitUntil: config.useVirtualTime ? 'domcontentloaded' : 'networkidle0',
+        waitUntil: 'domcontentloaded',
         timeout: 30000
       });
       console.log('   Page loaded!');
       
-      // If using virtual time, start at time 0
-      if (config.useVirtualTime) {
-        console.log('   Initializing virtual time at 0...');
-        await page.evaluate(() => {
-          if (window.__timeweb) {
-            window.__timeweb.setTime(0);
-          }
-        });
-        await new Promise(resolve => setTimeout(resolve, 50)); // Real delay for browser processing
-      }
+      // Initialize virtual time at 0
+      console.log('   Initializing virtual time at 0...');
+      await page.evaluate(() => {
+        if (window.__timeweb) {
+          window.__timeweb.setTime(0);
+        }
+      });
+      await new Promise(resolve => setTimeout(resolve, 50)); // Real delay for browser processing
       
       // Make the page background transparent for capture
       await page.evaluate((stageSelector) => {
@@ -821,35 +805,20 @@ export class FasterHTML2Video {
         throw new Error(`Stage element not found: ${config.stageSelector || '#stage'}`);
       }
 
-      const frameCapture = new SmartFrameCapture(page, config);
       encoder = new TransparentWebMEncoder(config, config.output);
-
       await encoder.initialize();
 
       const fps = config.fps || 60;
-      
-      // Wait for start signal if configured
-      if (config.enableRecordingControl && config.waitForStartSignal) {
-        await this.waitForStartSignal(page, config);
-      }
-
-      // Calculate frame count - always respect the duration from command line
       const maxDuration = config.duration;
       const maxFrames = Math.ceil(config.duration * fps);
       
-      if (config.enableRecordingControl) {
-        console.log(`🎥 Recording ready (duration: ${maxDuration}s @ ${fps}fps)`);
-        console.log(`   Recording control enabled - waiting for start/stop signals`);
-        if (config.maxRecordingDuration) {
-          console.log(`   Safety limit: ${config.maxRecordingDuration}s`);
-        }
-      } else {
-        console.log(`🎥 Capturing ${maxFrames} frames...`);
-      }
-
+      let frameCapture: SmartFrameCapture | null = null;
       let capturedFrames = 0;
       let duplicatedFrames = 0;
       let currentFrame = 0;
+      
+      // Pure virtual time capture mode
+      console.log(`🎥 Capturing ${maxFrames} frames...`);
 
       // Create progress bar
       progressBar = new ProgressBarManager();
@@ -861,7 +830,16 @@ export class FasterHTML2Video {
         console.error('Failed to start progress bar:', e);
       }
       
-      // Recording loop
+      // Always use pure virtual time capture for deterministic results
+      const result = await captureVirtualTimeMode(page, config, encoder, progressBar);
+      capturedFrames = result.capturedFrames;
+      duplicatedFrames = result.duplicatedFrames;
+      currentFrame = Math.floor(config.duration * fps);
+      
+      /* Legacy code removed - recording control conflicts with virtual time
+      
+      // Remove everything between here and "End of else block" comment
+      /*
       while (currentFrame < maxFrames) {
         const timestamp = currentFrame / fps;
         
@@ -902,12 +880,20 @@ export class FasterHTML2Video {
         
         // Skip frame if paused or not recording
         if (config.enableRecordingControl && !this.shouldCaptureFrame()) {
+          // Don't advance frame counter while waiting to record
+          if (this.recordingState === RecordingState.NOT_STARTED) {
+            await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms and check again
+            continue;
+          }
+          // For paused state, advance frame but don't capture
           await new Promise(resolve => setTimeout(resolve, 1000 / fps)); // Wait frame duration
+          currentFrame++;
+          progressBar.update(currentFrame, `${(currentFrame / fps).toFixed(1)}s | ${this.recordingState}`);
           continue;
         }
         
         try {
-          const { pixels, isDuplicate } = await frameCapture.captureFrame(timestamp);
+          const { pixels, isDuplicate } = await frameCapture!.captureFrame(timestamp);
 
           if (isDuplicate) {
             await encoder.duplicateLastFrame();
@@ -960,6 +946,7 @@ export class FasterHTML2Video {
           }
         }
       }
+      */ // End of commented legacy code
 
       // Complete progress bar
       if (progressBarStarted) {
@@ -973,7 +960,7 @@ export class FasterHTML2Video {
       console.log('🎞️  Finalizing video encoding...');
       const stats = await encoder.finalize();
       
-      stats.skippedFrames = frameCapture.getSkippedFrameCount();
+      stats.skippedFrames = 0; // Virtual time capture doesn't skip frames
       stats.capturedFrames = capturedFrames;
 
       const endTime = performance.now();
@@ -1136,6 +1123,8 @@ export class FasterHTML2Video {
           if (this.recordingState === RecordingState.NOT_STARTED || this.recordingState === RecordingState.PAUSED) {
             this.recordingState = RecordingState.RECORDING;
             this.recordingStartTime = performance.now();
+            // Reset virtual time to 0 when recording starts
+            this.virtualTimeMs = 0;
             console.log('   📹 Recording STARTED');
             return { status: 'started', timestamp: Date.now() };
           }
