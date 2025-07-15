@@ -86,10 +86,45 @@ module.exports = async function(config) {
   // Inject virtual time control before navigation
   await overwriteTime(page);
 
+  // Set up recording control if enabled
+  let recordingStarted = false;
+  let recordingStopped = false;
+  
+  if (config.enableRecordingControl) {
+    await page.exposeFunction('__recordingControl', async (action) => {
+      log(`Recording control: ${action}`);
+      if (action === 'start') {
+        recordingStarted = true;
+        return { status: 'started' };
+      } else if (action === 'stop') {
+        recordingStopped = true;
+        return { status: 'stopped' };
+      }
+      return { status: 'unknown' };
+    });
+    
+    log('Recording control enabled');
+  }
+
   // Navigate to page
   log(`Loading ${url}...`);
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   log('Page loaded');
+  
+  // Wait for start signal if configured
+  if (config.enableRecordingControl && config.waitForStartSignal) {
+    log('Waiting for start signal from page...');
+    while (!recordingStarted && !recordingStopped) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    if (recordingStopped) {
+      log('Recording stopped before starting');
+      return;
+    }
+    
+    log('Start signal received, beginning capture...');
+  }
 
   // Prepare page
   await page.evaluate((selector) => {
@@ -140,23 +175,58 @@ module.exports = async function(config) {
     });
   });
 
-  // Create progress bar
-  const progressBar = new cliProgress.SingleBar({
-    format: '{bar} │ {percentage}% │ {value}/{total} frames │ ETA: {eta}s │ {duration}s │ {fps}',
-    barCompleteChar: '\u2588',
-    barIncompleteChar: '\u2591',
-    hideCursor: true
-  });
+  // Create appropriate progress indicator based on recording control
+  let progressBar;
+  
+  if (config.enableRecordingControl) {
+    // For recording control, use a spinner with frame count
+    progressBar = new cliProgress.SingleBar({
+      format: '⏺ Recording │ {value} frames captured │ {duration}s │ {fps}',
+      barCompleteChar: '\u2588',
+      barIncompleteChar: '\u2591',
+      hideCursor: true,
+      linewrap: false,
+      clearOnComplete: true
+    });
+  } else {
+    // Standard progress bar for fixed duration
+    progressBar = new cliProgress.SingleBar({
+      format: '{bar} │ {percentage}% │ {value}/{total} frames │ ETA: {eta}s │ {duration}s │ {fps}',
+      barCompleteChar: '\u2588',
+      barIncompleteChar: '\u2591',
+      hideCursor: true
+    });
+  }
 
   // Capture frames
-  log(`Capturing ${totalFrames} frames at ${fps}fps...`);
+  if (config.enableRecordingControl) {
+    log(`Starting capture at ${fps}fps (recording control enabled)...`);
+  } else {
+    log(`Capturing ${totalFrames} frames at ${fps}fps...`);
+  }
+  
   const startTime = Date.now();
   
-  progressBar.start(totalFrames, 0, {
-    fps: '0.0 fps'
-  });
+  if (config.enableRecordingControl) {
+    // For recording control, start with indeterminate total
+    progressBar.start(9999, 0, {
+      fps: '0.0 fps'
+    });
+  } else {
+    progressBar.start(totalFrames, 0, {
+      fps: '0.0 fps'
+    });
+  }
 
+  let actualFramesCaptured = 0;
+  
   for (let frameNum = 0; frameNum < totalFrames; frameNum++) {
+    // Check if recording was stopped
+    if (config.enableRecordingControl && recordingStopped) {
+      log('Recording stopped by page signal');
+      break;
+    }
+    
     const timestamp = frameNum * frameDuration;
     
     // Go to specific time
@@ -197,12 +267,23 @@ module.exports = async function(config) {
       await new Promise(resolve => ffmpeg.stdin.once('drain', resolve));
     }
     
+    actualFramesCaptured = frameNum + 1;
+    
     // Update progress
     const elapsed = (Date.now() - startTime) / 1000;
-    const captureRate = frameNum > 0 ? (frameNum + 1) / elapsed : 0;
-    progressBar.update(frameNum + 1, {
-      fps: `${captureRate.toFixed(1)} fps`
-    });
+    const captureRate = frameNum > 0 ? actualFramesCaptured / elapsed : 0;
+    
+    if (config.enableRecordingControl) {
+      // For recording control, just update the frame count
+      progressBar.update(actualFramesCaptured, {
+        fps: `${captureRate.toFixed(1)} fps`,
+        duration: elapsed.toFixed(0)
+      });
+    } else {
+      progressBar.update(actualFramesCaptured, {
+        fps: `${captureRate.toFixed(1)} fps`
+      });
+    }
   }
 
   // Finalize
@@ -214,7 +295,8 @@ module.exports = async function(config) {
   await browser.close();
 
   const elapsed = (Date.now() - startTime) / 1000;
-  const captureRate = totalFrames / elapsed;
+  const captureRate = actualFramesCaptured / elapsed;
+  const actualDuration = actualFramesCaptured / fps;
   
   // Get file size
   const stats = fs.statSync(output);
@@ -224,11 +306,11 @@ module.exports = async function(config) {
   const metadata = {
     generationTime: elapsed,
     processingSpeed: captureRate,
-    generationTimeRatio: elapsed / duration,
+    generationTimeRatio: elapsed / actualDuration,
     totalFrames: totalFrames,
-    capturedFrames: totalFrames,
-    skippedFrames: 0,
-    duration: duration,
+    capturedFrames: actualFramesCaptured,
+    skippedFrames: totalFrames - actualFramesCaptured,
+    duration: actualDuration,
     fps: fps,
     width: config.width || 1920,
     height: config.height || 1080,
@@ -247,7 +329,8 @@ module.exports = async function(config) {
   log(`\nCompleted!`);
   log(`Total time: ${elapsed.toFixed(1)}s`);
   log(`Capture rate: ${captureRate.toFixed(1)} fps`);
-  log(`Generation time ratio: ${(elapsed / duration).toFixed(2)}x`);
+  log(`Actual video duration: ${actualDuration.toFixed(1)}s (${actualFramesCaptured} frames)`);
+  log(`Generation time ratio: ${(elapsed / actualDuration).toFixed(2)}x`);
   log(`Output: ${output} (${fileSizeMB.toFixed(1)}MB)`);
   log(`Metadata: ${metadataPath}`);
   

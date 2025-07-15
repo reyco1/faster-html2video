@@ -59,7 +59,6 @@
       const startDelay = 1;
 
       const stage = document.querySelector(".stage");
-      const mainContainer = document.querySelector(".main-container");
       const textLayer = document.querySelector(".text-layer");
       const highlight = document.querySelector(".highlight");
       const background = document.querySelector(".background");
@@ -142,132 +141,56 @@
         background.classList.remove("opacity-0");
       }
 
-      // Check for recording control immediately
-      console.log("Checking for recording control...", {
-        hasRecordingControl: !!window.__recordingControl,
-        readyState: document.readyState
-      });
-
-      // Track if recording has started
-      let recordingStarted = false;
-
-      // Also try starting recording immediately if control is available
-      async function tryStartRecording() {
-        if (recordingStarted) {
-          console.log("Recording already started, skipping");
-          return true;
-        }
-        
-        console.log("tryStartRecording called");
+      // Recording control helper function
+      async function sendRecordingSignal(action) {
         if (window.__recordingControl) {
-          console.log("Recording control found, attempting to start");
           try {
-            const result = await window.__recordingControl('start');
-            console.log("Recording control response:", result);
-            
-            if (result.status === 'started' || result.status === 'already_started') {
-              console.log("Recording started successfully");
-              recordingStarted = true;
-              return true;
-            } else if (result.status === 'not_ready') {
-              console.log("Recording control not ready yet, will retry");
-              return false;
-            }
+            const result = await window.__recordingControl(action);
+            console.log(`Recording ${action} signal sent:`, result);
+            return result;
           } catch (e) {
-            console.error("Failed to start recording:", e);
+            console.error(`Failed to send ${action} signal:`, e);
           }
         } else {
-          // Try console fallback
-          console.log("RECORDING:START");
-          recordingStarted = true;
-        }
-        return recordingStarted;
-      }
-
-      // Don't start recording immediately - wait for proper initialization
-      // The tool needs time to set up after exposing the function
-      
-      // Set up a retry mechanism
-      let retryCount = 0;
-      const maxRetries = 30; // 30 seconds max
-      
-      async function retryStartRecording() {
-        if (recordingStarted || retryCount >= maxRetries) {
-          return;
-        }
-        
-        retryCount++;
-        console.log(`Retry ${retryCount}: Attempting to start recording`);
-        
-        const started = await tryStartRecording();
-        if (!started) {
-          // Retry after 1 second
-          setTimeout(retryStartRecording, 1000);
+          console.log(`Recording control not available, signal: ${action}`);
         }
       }
-      
-      // Start retry mechanism after a short delay
-      setTimeout(retryStartRecording, 500);
-      
-      // Also try on window load
-      window.addEventListener('load', () => {
-        console.log("Window load event - checking recording status");
-        retryStartRecording();
-      });
 
       document.addEventListener("DOMContentLoaded", async function () {
-        console.log("DOMContentLoaded fired");
-        
         try {
-          console.log("Fetching JSON from:", jsonPath);
-          const response = await fetch(jsonPath);
+          // Send start signal when ready to begin animation
+          await sendRecordingSignal('start');
           
+          const response = await fetch(jsonPath);
           if (!response.ok) {
-            throw new Error(`Failed to fetch JSON: ${response.status} ${response.statusText}`);
+            throw new Error(`Failed to fetch JSON: ${response.status}`);
           }
           
           const data = await response.json();
-          console.log("JSON data loaded, words count:", data.words.length);
-          
           const wordDataArr = data.words;
           const lines = await createLines(data);
 
           await setLine(lines[0]);
           initbackground();
 
-          // Try to start recording if not already started
-          console.log("Attempting to start recording from DOMContentLoaded...");
-          retryStartRecording();
-
           let currentLineIndex = 0;
           
-          // Calculate total duration based on last word timing
+          // Calculate total animation duration
           const lastWord = wordDataArr[wordDataArr.length - 1];
           const totalDuration = lastWord.endMS + delay * 1000;
           
-          // Schedule recording stop after all animations complete
+          // Schedule stop signal after animation completes
           setTimeout(async () => {
-            console.log(`Animation complete after ${totalDuration}ms, stopping recording...`);
-            if (window.__recordingControl) {
-              console.log("Using window.__recordingControl to stop");
-              try {
-                await window.__recordingControl('stop');
-                console.log("Recording stopped successfully");
-              } catch (e) {
-                console.error("Failed to stop recording:", e);
-              }
-            } else {
-              // Fallback to console-based recording control
-              console.log("Using console-based stop");
-              console.log("RECORDING:STOP");
-            }
-          }, totalDuration + 1000); // Add 1 second buffer after last word
+            await sendRecordingSignal('stop');
+          }, totalDuration + 500); // Small buffer after animation
           
+          // Run the animation
           wordDataArr.forEach((caption, index) => {
             setTimeout(async () => {
               gsap.killTweensOf(highlight);
               let wordElement = document.getElementById(`word-${index}`);
               background.classList.remove("opacity-0");
+              
               if (!!wordElement) {
                 const [top, left, width, height] = getHighLightPos(wordElement);
                 if (index === 0) {
@@ -290,10 +213,7 @@
                     left,
                   });
                 }
-                const [_top, _left, _width, _height] = getHighLightPos(
-                  textLayer,
-                  10
-                );
+                const [_top, _left, _width, _height] = getHighLightPos(textLayer, 10);
                 gsap.to(background, {
                   duration: 0,
                   width: _width,
@@ -316,10 +236,7 @@
                     highlight.classList.remove("opacity-0");
                   },
                 });
-                const [_top, _left, _width, _height] = getHighLightPos(
-                  textLayer,
-                  10
-                );
+                const [_top, _left, _width, _height] = getHighLightPos(textLayer, 10);
                 gsap.to(background, {
                   duration: 0,
                   width: _width,
@@ -332,16 +249,7 @@
           });
         } catch (error) {
           console.error("Animation failed:", error);
-          // Stop recording on error
-          if (window.__recordingControl) {
-            try {
-              await window.__recordingControl('stop');
-            } catch (e) {
-              console.error("Failed to stop recording on error:", e);
-            }
-          } else {
-            console.log("RECORDING:STOP");
-          }
+          await sendRecordingSignal('stop');
         }
       });
     </script>

@@ -18,6 +18,8 @@ program
   .option('-h, --height <pixels>', 'Video height', parseInt, 1080)
   .option('-s, --selector <selector>', 'CSS selector for capture area', 'body')
   .option('-q, --quality <crf>', 'Video quality (0-51, lower is better)', parseInt, 23)
+  .option('--enable-recording-control', 'Enable recording control via page signals')
+  .option('--wait-for-start-signal', 'Wait for start signal from page before recording')
   .option('--verbose', 'Show FFmpeg output')
   .option('--quiet', 'Suppress all output')
   .action(async (url, output, options) => {
@@ -31,6 +33,8 @@ program
         height: options.height,
         selector: options.selector,
         quality: options.quality,
+        enableRecordingControl: options.enableRecordingControl,
+        waitForStartSignal: options.waitForStartSignal,
         verbose: options.verbose,
         quiet: options.quiet
       };

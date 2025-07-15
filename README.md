@@ -37,6 +37,8 @@ fast-html2video https://example.com/animation video.webm -d 60 --fps 60
 - `-h, --height <pixels>` - Video height (default: 1080)
 - `-s, --selector <selector>` - CSS selector for capture area (default: 'body')
 - `-q, --quality <crf>` - Video quality, 0-51, lower is better (default: 23)
+- `--enable-recording-control` - Enable recording control via page signals
+- `--wait-for-start-signal` - Wait for start signal from page before recording
 - `--verbose` - Show FFmpeg output
 - `--quiet` - Suppress all output
 
@@ -53,6 +55,35 @@ await capture({
   selector: '.stage'
 });
 ```
+
+## Recording Control
+
+You can enable recording control to let your HTML page control when recording starts and stops:
+
+```javascript
+// In your HTML page:
+async function startRecording() {
+  if (window.__recordingControl) {
+    await window.__recordingControl('start');
+  }
+}
+
+async function stopRecording() {
+  if (window.__recordingControl) {
+    await window.__recordingControl('stop');
+  }
+}
+```
+
+Then run with:
+```bash
+fast-html2video animation.html output.webm -d 60 --enable-recording-control --wait-for-start-signal
+```
+
+This is useful for:
+- Recording only the relevant portion of an animation
+- Dynamically determining recording duration
+- Synchronizing with async content loading
 
 ## How it Works
 
