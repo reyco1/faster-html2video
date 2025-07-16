@@ -1,0 +1,38 @@
+# Development files
+.git
+.gitignore
+*.log
+.DS_Store
+
+# Output directories
+output/
+outputs/
+batch-output/
+test-batch/
+
+# Example outputs
+*.webm
+*.mp4
+*.metadata.json
+
+# Development and test files
+examples/
+viewers/
+audio.mp3
+update-registry.js
+video-registry.json
+CLAUDE.md
+
+# npm
+.npmrc
+npm-debug.log*
+
+# OS files
+Thumbs.db
+
+# Editor directories and files
+.idea
+.vscode
+*.swp
+*.swo
+*~

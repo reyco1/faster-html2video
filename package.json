@@ -1,17 +1,43 @@
 {
   "name": "fast-html2video",
   "version": "1.0.0",
-  "description": "High-performance HTML animation to video converter",
+  "description": "High-performance HTML animation to video converter using virtual time capture",
   "main": "index.js",
   "bin": {
     "fast-html2video": "./cli.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "example": "node cli.js examples/text-animation.html output/example.webm -d 5 --fps 30",
+    "prepublishOnly": "echo 'Preparing for npm publish...' && npm run check-requirements",
+    "check-requirements": "node -e \"console.log('✓ Node version:', process.version); console.log('✓ Package ready for publishing')\""
   },
-  "keywords": ["video", "capture", "animation", "html", "webm", "virtual-time"],
-  "author": "",
+  "keywords": [
+    "video",
+    "capture",
+    "animation",
+    "html",
+    "webm",
+    "virtual-time",
+    "puppeteer",
+    "ffmpeg",
+    "converter",
+    "batch",
+    "cli",
+    "html-to-video",
+    "web-animation",
+    "frame-capture"
+  ],
+  "author": "Rey Columna <reyco1@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reyco1/faster-html2video.git"
+  },
+  "bugs": {
+    "url": "https://github.com/reyco1/faster-html2video/issues"
+  },
+  "homepage": "https://github.com/reyco1/faster-html2video#readme",
   "dependencies": {
     "cli-progress": "^3.12.0",
     "commander": "^11.0.0",
@@ -20,5 +46,13 @@
   },
   "engines": {
     "node": ">=14.0.0"
-  }
+  },
+  "preferGlobal": true,
+  "files": [
+    "index.js",
+    "cli.js",
+    "lib/",
+    "LICENSE",
+    "README.md"
+  ]
 }
