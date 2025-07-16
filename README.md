@@ -54,6 +54,9 @@ fast-html2video page.html output.webm -s "#animation-container" -d 20
 | `--enable-recording-control` | Enable start/stop signals from page | false |
 | `--wait-for-start-signal` | Wait for start signal before recording | false |
 | `--no-metadata` | Disable metadata JSON generation | false |
+| `--batch` | Enable batch mode for multiple files | false |
+| `--output-dir <dir>` | Output directory for batch mode | './batch-output' |
+| `--parallel <n>` | Number of parallel conversions | 2 |
 | `--verbose` | Show FFmpeg output | false |
 | `--quiet` | Suppress all output | false |
 
@@ -107,14 +110,20 @@ fast-html2video animation.html output.webm -d 60 --enable-recording-control --wa
 
 ### Batch Processing
 
-Convert multiple files at once:
+Convert multiple files at once using the built-in batch mode:
 
 ```bash
-# Using the batch converter
-./batch-convert.js --output-dir ./videos --parallel 2 animations/*.html
+# Basic batch conversion
+fast-html2video --batch --output-dir ./videos animations/*.html
 
-# With custom settings
-./batch-convert.js --fps 60 --duration 30 --parallel 4 file1.html file2.html file3.html
+# Batch with parallel processing
+fast-html2video --batch --output-dir ./videos --parallel 4 *.html
+
+# Batch with custom settings
+fast-html2video --batch --output-dir ./output --fps 60 -d 30 --parallel 2 animations/*.html
+
+# Automatic batch mode (when multiple files provided)
+fast-html2video file1.html file2.html file3.html --output-dir ./videos
 ```
 
 ## 🔧 Programmatic API
