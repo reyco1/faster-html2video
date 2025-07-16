@@ -273,7 +273,7 @@ NODE_OPTIONS="--max-old-space-size=8192" fast-html2video animation.html output.w
 
 ## 🏗️ Architecture
 
-fast-html2video uses a virtual time approach inspired by [timecut](https://github.com/tungs/timecut):
+fast-html2video uses a virtual time approach for frame-perfect capture:
 
 1. **Virtual Time Control** - Overrides browser timing functions
 2. **Frame-by-Frame Capture** - Steps through animation time precisely
@@ -290,7 +290,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Inspired by [timecut](https://github.com/tungs/timecut) for virtual time control
 - Uses [Puppeteer](https://pptr.dev/) for browser automation
 - [FFmpeg](https://ffmpeg.org/) for video encoding
 - [timeweb](https://github.com/tungs/timeweb) for timing control
