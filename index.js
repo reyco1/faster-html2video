@@ -304,6 +304,7 @@ module.exports = async function(config) {
   
   // Generate metadata
   const metadata = {
+    inputFile: url,
     generationTime: elapsed,
     processingSpeed: captureRate,
     generationTimeRatio: elapsed / actualDuration,

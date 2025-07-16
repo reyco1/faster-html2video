@@ -191,6 +191,7 @@ When metadata generation is enabled (default), a JSON file is created with captu
 
 ```json
 {
+  "inputFile": "animation.html",
   "generationTime": 45.2,
   "processingSpeed": 8.5,
   "generationTimeRatio": 1.51,
