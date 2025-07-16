@@ -20,6 +20,7 @@ program
   .option('-q, --quality <crf>', 'Video quality (0-51, lower is better)', parseInt, 23)
   .option('--enable-recording-control', 'Enable recording control via page signals')
   .option('--wait-for-start-signal', 'Wait for start signal from page before recording')
+  .option('--no-metadata', 'Disable metadata JSON generation')
   .option('--verbose', 'Show FFmpeg output')
   .option('--quiet', 'Suppress all output')
   .action(async (url, output, options) => {
@@ -35,6 +36,7 @@ program
         quality: options.quality,
         enableRecordingControl: options.enableRecordingControl,
         waitForStartSignal: options.waitForStartSignal,
+        generateMetadata: options.metadata !== false,
         verbose: options.verbose,
         quiet: options.quiet
       };

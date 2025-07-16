@@ -322,9 +322,12 @@ module.exports = async function(config) {
     timestamp: new Date().toISOString()
   };
   
-  // Write metadata file
-  const metadataPath = output.replace(/\.[^.]+$/, '.metadata.json');
-  fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+  // Write metadata file if enabled
+  let metadataPath = null;
+  if (config.generateMetadata !== false) {
+    metadataPath = output.replace(/\.[^.]+$/, '.metadata.json');
+    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+  }
   
   log(`\nCompleted!`);
   log(`Total time: ${elapsed.toFixed(1)}s`);
@@ -332,7 +335,9 @@ module.exports = async function(config) {
   log(`Actual video duration: ${actualDuration.toFixed(1)}s (${actualFramesCaptured} frames)`);
   log(`Generation time ratio: ${(elapsed / actualDuration).toFixed(2)}x`);
   log(`Output: ${output} (${fileSizeMB.toFixed(1)}MB)`);
-  log(`Metadata: ${metadataPath}`);
+  if (metadataPath) {
+    log(`Metadata: ${metadataPath}`);
+  }
   
   } catch (error) {
     if (browser) {
