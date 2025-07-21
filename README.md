@@ -272,14 +272,161 @@ For long captures or high resolutions:
 NODE_OPTIONS="--max-old-space-size=8192" fast-html2video animation.html output.webm
 ```
 
-## 🏗️ Architecture
+## 🏗️ How It Works
 
-fast-html2video uses a virtual time approach for frame-perfect capture:
+fast-html2video achieves frame-perfect capture through a sophisticated virtual time system that completely controls animation timing. Here's the detailed process:
 
-1. **Virtual Time Control** - Overrides browser timing functions
-2. **Frame-by-Frame Capture** - Steps through animation time precisely
-3. **Direct Pipe Streaming** - Sends frames directly to FFmpeg
-4. **Async Coordination** - Handles page events and recording signals
+### 1. Virtual Time Override 🕰️
+
+The core innovation is **virtual time control**. When your HTML page loads, fast-html2video injects the [timeweb](https://github.com/tungs/timeweb) library which overrides all browser timing functions:
+
+```javascript
+// These browser functions are replaced:
+setTimeout()     → Virtual time equivalent
+setInterval()    → Virtual time equivalent
+Date.now()       → Returns virtual time
+performance.now() → Returns virtual time
+requestAnimationFrame() → Virtual frame timing
+```
+
+This means your animations run at exactly the pace we control, not real-time. A 10-second animation might take 2 minutes to capture, but every frame is perfect.
+
+### 2. Frame-by-Frame Capture 🎬
+
+Instead of recording in real-time, the system steps through time precisely:
+
+```javascript
+for (let frame = 0; frame < totalFrames; frame++) {
+  // Jump to exact timestamp for this frame
+  const timestamp = frame * (1000 / fps);
+  await goToTimeAndAnimateForCapture(page, timestamp);
+  
+  // Let animations render at this exact moment
+  await page.evaluate(() => new Promise(resolve => 
+    requestAnimationFrame(resolve)
+  ));
+  
+  // Capture this frame as PNG
+  const screenshot = await page.screenshot({
+    type: 'png',
+    omitBackground: true  // Preserves transparency
+  });
+}
+```
+
+### 3. Direct Memory Streaming 🚀
+
+Rather than saving thousands of PNG files to disk, frames are streamed directly to FFmpeg:
+
+```javascript
+// Launch FFmpeg with WebM VP9 encoding
+const ffmpeg = spawn('ffmpeg', [
+  '-f', 'image2pipe',           // Accept images from stdin
+  '-vcodec', 'png',             // Input format is PNG
+  '-r', fps,                    // Set framerate
+  '-i', '-',                    // Read from stdin (pipe)
+  '-vcodec', 'libvpx-vp9',      // VP9 codec for WebM
+  '-pix_fmt', 'yuva420p',       // Preserve alpha channel
+  '-crf', quality,              // Quality setting
+  '-deadline', 'good',          // Encoding speed vs quality
+  output                        // Output file
+]);
+
+// Stream each frame directly to FFmpeg
+ffmpeg.stdin.write(screenshot);
+```
+
+### 4. Puppeteer Browser Control 🎭
+
+The system uses Puppeteer to control a headless Chrome browser:
+
+```javascript
+// Launch browser with specific settings
+const browser = await puppeteer.launch({
+  headless: true,
+  args: [
+    '--disable-web-security',
+    '--disable-dev-shm-usage',
+    '--no-sandbox'
+  ]
+});
+
+// Set exact viewport size
+await page.setViewport({
+  width: 1920,
+  height: 1080,
+  deviceScaleFactor: 1
+});
+```
+
+### 5. Recording Control Integration 🎮
+
+When recording control is enabled, the system exposes functions to the page:
+
+```javascript
+// Inject recording control function into the page
+await page.exposeFunction('__recordingControl', async (action) => {
+  if (action === 'start') {
+    recordingStarted = true;
+    return { status: 'started' };
+  } else if (action === 'stop') {
+    recordingStopped = true;
+    return { status: 'stopped' };
+  }
+});
+```
+
+Your HTML can then control recording:
+```javascript
+// In your HTML
+await window.__recordingControl('start');  // Begin capture
+await window.__recordingControl('stop');   // End capture
+```
+
+### 6. Progress Tracking 📊
+
+Different progress indicators based on mode:
+
+```javascript
+if (config.enableRecordingControl) {
+  // Dynamic progress: ⏺ Recording │ 245 frames captured │ 32s │ 7.6 fps
+  progressBar = new cliProgress.SingleBar({
+    format: '⏺ Recording │ {value} frames captured │ {duration}s │ {fps}'
+  });
+} else {
+  // Fixed progress: ████████░░░░ │ 67% │ 201/300 frames │ ETA: 45s │ 8.2 fps  
+  progressBar = new cliProgress.SingleBar({
+    format: '{bar} │ {percentage}% │ {value}/{total} frames │ ETA: {eta}s │ {fps}'
+  });
+}
+```
+
+### 7. Metadata Generation 📈
+
+Each capture generates detailed statistics:
+
+```javascript
+const metadata = {
+  inputFile: url,                           // Source HTML file
+  generationTime: elapsed,                  // Total capture time
+  processingSpeed: captureRate,             // Frames per second processed
+  generationTimeRatio: elapsed / actualDuration, // Speed ratio
+  capturedFrames: actualFramesCaptured,     // Frames actually captured
+  duration: actualDuration,                 // Final video length
+  codec: 'vp9',                            // Video codec used
+  // ... more stats
+};
+```
+
+### Why This Works So Well ⚡
+
+1. **Frame Perfect**: Every frame captured at exact timing, no drops or duplicates
+2. **System Independent**: CPU load doesn't affect animation timing
+3. **Transparent**: Preserves alpha channels for overlays and effects
+4. **Memory Efficient**: No temporary files, direct streaming to video
+5. **Flexible**: Works with any web animation (CSS, JavaScript, Canvas, WebGL)
+
+This approach ensures that complex animations with varying performance requirements all capture at perfect quality, regardless of your system's performance.
 
 ## 🤝 Contributing
 
