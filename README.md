@@ -57,6 +57,7 @@ fast-html2video page.html output.webm -s "#animation-container" -d 20
 | `--batch` | Enable batch mode for multiple files | false |
 | `--output-dir <dir>` | Output directory for batch mode | './batch-output' |
 | `--parallel <n>` | Number of parallel conversions | 2 |
+| `--webhook-url <url>` | Webhook URL for job progress notifications | none |
 | `--verbose` | Show FFmpeg output | false |
 | `--quiet` | Suppress all output | false |
 
@@ -126,6 +127,45 @@ fast-html2video --batch --output-dir ./output --fps 60 -d 30 --parallel 2 animat
 fast-html2video file1.html file2.html file3.html --output-dir ./videos
 ```
 
+### Webhook Notifications
+
+Get real-time updates on job progress by providing a webhook URL:
+
+```bash
+# Single file with webhook
+fast-html2video animation.html output.webm --webhook-url https://your-server.com/webhook
+
+# Batch processing with webhook
+fast-html2video --batch --webhook-url https://your-server.com/webhook *.html
+```
+
+**Webhook Events:**
+- `job.started` - When a single job begins
+- `job.progress` - Progress updates during capture (every 10% or 50 frames)
+- `job.completed` - When a job finishes successfully
+- `job.failed` - When a job encounters an error
+- `batch.started` - When batch processing begins
+- `batch.progress` - After each file in batch completes
+- `batch.completed` - When entire batch finishes
+
+**Webhook Payload Example:**
+```json
+{
+  "event": "job.progress",
+  "jobId": "job_1642857600000_abc123",
+  "timestamp": "2023-12-08T10:30:00.000Z",
+  "data": {
+    "progress": 45,
+    "framesCaptured": 135,
+    "totalFrames": 300,
+    "captureRate": 8.5,
+    "elapsed": 15.8,
+    "estimatedTimeRemaining": 19.4,
+    "version": "1.0"
+  }
+}
+```
+
 ## 🔧 Programmatic API
 
 ```javascript
@@ -152,6 +192,7 @@ await capture({
   enableRecordingControl: true,
   waitForStartSignal: true,
   generateMetadata: true,
+  webhookUrl: 'https://your-server.com/webhook',
   quiet: false
 });
 ```
@@ -450,4 +491,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Made with ❤️ by the community
+Made with ❤️ by Rey Columna

@@ -9,6 +9,7 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const cliProgress = require('cli-progress');
 const { overwriteTime, goToTimeAndAnimateForCapture } = require('./lib/virtual-time');
+const { sendWebhook, createWebhookPayload, WEBHOOK_EVENTS } = require('./lib/webhook');
 
 const defaultFPS = 60;
 const defaultDuration = 5;
@@ -38,6 +39,9 @@ module.exports = async function(config) {
   
   const url = config.url.includes('://') ? config.url : 'file://' + path.resolve(process.cwd(), config.url);
   const output = path.resolve(process.cwd(), config.output);
+  
+  // Generate unique job ID for webhook tracking
+  const jobId = config.jobId || `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   const log = (...args) => {
     if (!config.quiet) {
@@ -124,6 +128,21 @@ module.exports = async function(config) {
     }
     
     log('Start signal received, beginning capture...');
+  }
+  
+  // Send job started webhook
+  if (config.webhookUrl) {
+    await sendWebhook(config.webhookUrl, createWebhookPayload(WEBHOOK_EVENTS.JOB_STARTED, jobId, {
+      inputFile: url,
+      outputFile: output,
+      settings: {
+        fps,
+        duration,
+        width: config.width,
+        height: config.height,
+        quality: config.quality
+      }
+    }));
   }
 
   // Prepare page
@@ -284,6 +303,24 @@ module.exports = async function(config) {
         fps: `${captureRate.toFixed(1)} fps`
       });
     }
+    
+    // Send progress webhook (every 10% or 50 frames, whichever is less frequent)
+    const progressInterval = Math.max(Math.floor(totalFrames * 0.1), 50);
+    if (config.webhookUrl && actualFramesCaptured % progressInterval === 0) {
+      const progress = config.enableRecordingControl ? 
+        actualFramesCaptured : // For recording control, show frames captured
+        (actualFramesCaptured / totalFrames) * 100; // For fixed duration, show percentage
+        
+      await sendWebhook(config.webhookUrl, createWebhookPayload(WEBHOOK_EVENTS.JOB_PROGRESS, jobId, {
+        progress: config.enableRecordingControl ? undefined : Math.round(progress),
+        framesCaptured: actualFramesCaptured,
+        totalFrames: config.enableRecordingControl ? undefined : totalFrames,
+        captureRate: parseFloat(captureRate.toFixed(1)),
+        elapsed: parseFloat(elapsed.toFixed(1)),
+        estimatedTimeRemaining: config.enableRecordingControl ? undefined : 
+          (totalFrames - actualFramesCaptured) / captureRate
+      }));
+    }
   }
 
   // Finalize
@@ -340,10 +377,40 @@ module.exports = async function(config) {
     log(`Metadata: ${metadataPath}`);
   }
   
+  // Send job completed webhook
+  if (config.webhookUrl) {
+    await sendWebhook(config.webhookUrl, createWebhookPayload(WEBHOOK_EVENTS.JOB_COMPLETED, jobId, {
+      inputFile: url,
+      outputFile: output,
+      metadata: {
+        generationTime: elapsed,
+        captureRate: parseFloat(captureRate.toFixed(1)),
+        actualDuration: parseFloat(actualDuration.toFixed(1)),
+        capturedFrames: actualFramesCaptured,
+        fileSize: parseFloat(fileSizeMB.toFixed(1)),
+        generationTimeRatio: parseFloat((elapsed / actualDuration).toFixed(2))
+      }
+    }));
+  }
+  
   } catch (error) {
     if (browser) {
       await browser.close();
     }
+    
+    // Send job failed webhook
+    if (config.webhookUrl) {
+      await sendWebhook(config.webhookUrl, createWebhookPayload(WEBHOOK_EVENTS.JOB_FAILED, jobId, {
+        inputFile: url,
+        outputFile: output,
+        error: {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        }
+      }));
+    }
+    
     throw error;
   }
 };

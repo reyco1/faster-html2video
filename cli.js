@@ -22,6 +22,7 @@ async function processSingleFile(input, output, options) {
     enableRecordingControl: options.enableRecordingControl,
     waitForStartSignal: options.waitForStartSignal,
     generateMetadata: options.metadata !== false,
+    webhookUrl: options.webhookUrl,
     verbose: options.verbose,
     quiet: options.quiet
   };
@@ -34,6 +35,9 @@ async function processBatch(files, options) {
   const outputDir = options.outputDir || './batch-output';
   const parallel = options.parallel || 2;
   
+  // Generate batch ID for webhook tracking
+  const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   // Create output directory
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -43,6 +47,23 @@ async function processBatch(files, options) {
   console.log(`Output directory: ${outputDir}`);
   console.log(`Parallel conversions: ${parallel}`);
   console.log(`Settings: ${options.fps}fps, ${options.duration}s duration, quality=${options.quality}\n`);
+  
+  // Send batch started webhook
+  if (options.webhookUrl) {
+    const { sendWebhook, createWebhookPayload, WEBHOOK_EVENTS } = require('./lib/webhook');
+    await sendWebhook(options.webhookUrl, createWebhookPayload(WEBHOOK_EVENTS.BATCH_STARTED, batchId, {
+      totalFiles: files.length,
+      outputDirectory: outputDir,
+      parallelConversions: parallel,
+      settings: {
+        fps: options.fps,
+        duration: options.duration,
+        quality: options.quality,
+        width: options.width,
+        height: options.height
+      }
+    }));
+  }
   
   const startTime = Date.now();
   const results = [];
@@ -61,14 +82,17 @@ async function processBatch(files, options) {
       const index = files.indexOf(file);
       console.log(`[${index + 1}/${files.length}] Starting: ${file}`);
       
-      const promise = processSingleFile(file, outputFile, options)
+      const jobId = `${batchId}_job_${index + 1}`;
+      const jobOptions = { ...options, jobId };
+      
+      const promise = processSingleFile(file, outputFile, jobOptions)
         .then(() => {
           console.log(`[${index + 1}/${files.length}] ✓ Completed: ${file}`);
-          return { file, success: true };
+          return { file, success: true, jobId };
         })
         .catch(error => {
           console.error(`[${index + 1}/${files.length}] ✗ Failed: ${file} - ${error.message}`);
-          return { file, success: false, error: error.message };
+          return { file, success: false, error: error.message, jobId };
         })
         .finally(() => {
           const idx = inProgress.indexOf(promise);
@@ -82,6 +106,24 @@ async function processBatch(files, options) {
     if (inProgress.length > 0) {
       const result = await Promise.race(inProgress);
       results.push(result);
+      
+      // Send batch progress webhook
+      if (options.webhookUrl) {
+        const { sendWebhook, createWebhookPayload, WEBHOOK_EVENTS } = require('./lib/webhook');
+        const completed = results.length;
+        const successful = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+        
+        await sendWebhook(options.webhookUrl, createWebhookPayload(WEBHOOK_EVENTS.BATCH_PROGRESS, batchId, {
+          totalFiles: files.length,
+          completedFiles: completed,
+          successfulFiles: successful,
+          failedFiles: failed,
+          progress: Math.round((completed / files.length) * 100),
+          currentFile: result.file,
+          currentFileSuccess: result.success
+        }));
+      }
     }
   }
   
@@ -105,6 +147,25 @@ async function processBatch(files, options) {
       console.log(`  - ${r.file}: ${r.error}`);
     });
   }
+  
+  // Send batch completed webhook
+  if (options.webhookUrl) {
+    const { sendWebhook, createWebhookPayload, WEBHOOK_EVENTS } = require('./lib/webhook');
+    const eventType = failed > 0 ? WEBHOOK_EVENTS.BATCH_COMPLETED : WEBHOOK_EVENTS.BATCH_COMPLETED;
+    
+    await sendWebhook(options.webhookUrl, createWebhookPayload(eventType, batchId, {
+      totalFiles: files.length,
+      successfulFiles: successful,
+      failedFiles: failed,
+      totalTime: parseFloat(totalTime),
+      averageTimePerFile: parseFloat((totalTime / files.length).toFixed(1)),
+      outputDirectory: outputDir,
+      failedFiles: failed > 0 ? results.filter(r => !r.success).map(r => ({
+        file: r.file,
+        error: r.error
+      })) : undefined
+    }));
+  }
 }
 
 program
@@ -124,6 +185,7 @@ program
   .option('--batch', 'Enable batch mode for multiple files')
   .option('--output-dir <dir>', 'Output directory for batch mode', './batch-output')
   .option('--parallel <n>', 'Number of parallel conversions in batch mode', parseInt, 2)
+  .option('--webhook-url <url>', 'Webhook URL to notify of job progress and completion')
   .option('--verbose', 'Show FFmpeg output')
   .option('--quiet', 'Suppress all output')
   .action(async (inputs, options) => {
