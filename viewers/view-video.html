@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebM Video Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        video {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info {
+            margin-top: 20px;
+            color: #666;
+        }
+        .video-selector {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .video-selector label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #333;
+        }
+        select {
+            padding: 8px 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+            min-width: 300px;
+        }
+        select:hover {
+            border-color: #999;
+        }
+        .metadata {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .metadata h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .metadata table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .metadata td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .metadata td:first-child {
+            font-weight: bold;
+            color: #555;
+            width: 40%;
+        }
+        .metadata td:last-child {
+            color: #333;
+        }
+        .loading {
+            color: #999;
+            font-style: italic;
+        }
+        .error {
+            color: #e74c3c;
+            padding: 10px;
+            background: #fee;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .no-video {
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            color: #666;
+            margin: 20px 0;
+        }
+        .refresh-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 14px;
+        }
+        .refresh-btn:hover {
+            background: #45a049;
+        }
+        .registry-info {
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        .conversion-panel {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .conversion-panel h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .conversion-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .convert-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+        .convert-btn:hover:not(:disabled) {
+            background: #45a049;
+        }
+        .convert-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .convert-btn.mp4 {
+            background: #2196F3;
+        }
+        .convert-btn.mp4:hover:not(:disabled) {
+            background: #1976D2;
+        }
+        .convert-btn.mov {
+            background: #FF9800;
+        }
+        .convert-btn.mov:hover:not(:disabled) {
+            background: #F57C00;
+        }
+        .progress-container {
+            margin-top: 15px;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #2196F3);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+        .progress-text {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        .download-links {
+            margin-top: 15px;
+            display: none;
+        }
+        .download-link {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin: 5px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .download-link:hover {
+            background: #45a049;
+        }
+        .alert {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebM Video Viewer</h1>
+        
+        <div class="video-selector">
+            <label for="videoSelect">Select Video:</label>
+            <select id="videoSelect">
+                <option value="">Loading videos...</option>
+            </select>
+            <button class="refresh-btn" onclick="loadVideoRegistry()">🔄 Refresh</button>
+            <div class="registry-info" id="registryInfo"></div>
+        </div>
+        
+        <div id="videoContainer" style="display: none;">
+            <video id="videoPlayer" controls autoplay loop>
+                Your browser does not support the video tag.
+            </video>
+            <div class="info">
+                The checkered background shows the transparency
+            </div>
+        </div>
+        
+        <div id="noVideo" class="no-video" style="display: none;">
+            <p>No video selected. Please choose a video from the dropdown above.</p>
+            <p style="font-size: 14px; margin-top: 20px;">
+                If you've just generated a video, click the Refresh button to update the list.
+            </p>
+        </div>
+        
+        <div class="metadata" id="metadata" style="display: none;">
+            <h2>Video Generation Metadata</h2>
+            <div class="loading">Loading metadata...</div>
+        </div>
+
+        <div class="conversion-panel" id="conversionPanel" style="display: none;">
+            <h2>📼 Format Conversion</h2>
+            <p style="color: #666; margin-bottom: 15px;">Convert this WebM video to other formats for better compatibility:</p>
+            
+            <div class="alert alert-success" id="successAlert"></div>
+            <div class="alert alert-error" id="errorAlert"></div>
+            
+            <div class="conversion-options">
+                <button class="convert-btn mp4" onclick="startConversion('mp4')" id="mp4Btn">
+                    🎬 Convert to MP4
+                </button>
+                <button class="convert-btn mov" onclick="startConversion('mov')" id="movBtn">
+                    🎞️ Convert to QuickTime (MOV)
+                </button>
+            </div>
+            
+            <div class="progress-container" id="conversionProgress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="conversionProgressFill"></div>
+                </div>
+                <div class="progress-text" id="conversionProgressText">Converting...</div>
+            </div>
+            
+            <div class="download-links" id="downloadLinks"></div>
+        </div>
+    </div>
+
+    <script>
+        const videoSelect = document.getElementById('videoSelect');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoContainer = document.getElementById('videoContainer');
+        const noVideoDiv = document.getElementById('noVideo');
+        const metadataDiv = document.getElementById('metadata');
+        const registryInfo = document.getElementById('registryInfo');
+        
+        let availableVideos = [];
+        let currentVideoFile = null;
+        let conversionEventSource = null;
+        
+        async function loadVideoRegistry() {
+            try {
+                // Show loading state
+                videoSelect.innerHTML = '<option value="">Loading videos...</option>';
+                registryInfo.textContent = 'Loading registry...';
+                
+                // Try to load the video registry
+                const response = await fetch('../video-registry.json');
+                
+                if (!response.ok) {
+                    throw new Error('Registry not found');
+                }
+                
+                const registry = await response.json();
+                availableVideos = [];
+                
+                // Process videos from registry
+                if (registry.videos && registry.videos.length > 0) {
+                    for (const video of registry.videos) {
+                        availableVideos.push({
+                            path: '../' + video.path,
+                            metadataPath: '../' + video.metadataPath,
+                            filename: video.filename,
+                            directory: video.directory,
+                            label: `${video.filename} (${video.directory})`,
+                            generatedAt: video.generatedAt,
+                            resolution: video.resolution,
+                            duration: video.duration,
+                            fileSize: video.fileSize
+                        });
+                    }
+                    
+                    // Update registry info
+                    const lastUpdated = new Date(registry.lastUpdated);
+                    registryInfo.textContent = `Registry updated: ${lastUpdated.toLocaleString()} • ${registry.videos.length} videos`;
+                } else {
+                    registryInfo.textContent = 'No videos in registry';
+                }
+                
+                updateVideoDropdown();
+                
+            } catch (error) {
+                console.error('Failed to load registry:', error);
+                
+                // Fall back to checking known locations
+                registryInfo.textContent = 'Registry not found, checking known locations...';
+                await loadVideoListFallback();
+            }
+        }
+        
+        async function loadVideoListFallback() {
+            // Fallback: check known files in common directories
+            const videoLocations = [
+                { path: '../outputs/', label: 'Outputs Directory' },
+                { path: '../', label: 'Root Directory' },
+                { path: '../examples/', label: 'Examples Directory' }
+            ];
+            
+            const knownFiles = [
+                'output.webm',
+                'highenergy.webm',
+                'highenergy-test.webm',
+                'test-animation-highenergy.webm',
+                'bounce-demo.webm'
+            ];
+            
+            availableVideos = [];
+            
+            for (const location of videoLocations) {
+                for (const file of knownFiles) {
+                    try {
+                        const videoPath = location.path + file;
+                        const response = await fetch(videoPath, { method: 'HEAD' });
+                        if (response.ok) {
+                            availableVideos.push({
+                                path: videoPath,
+                                filename: file,
+                                label: `${file} (${location.label})`,
+                                metadataPath: videoPath.replace('.webm', '.metadata.json'),
+                                directory: location.label
+                            });
+                        }
+                    } catch (e) {
+                        // File doesn't exist, continue
+                    }
+                }
+            }
+            
+            updateVideoDropdown();
+            registryInfo.textContent = `Found ${availableVideos.length} videos (fallback mode)`;
+        }
+        
+        function updateVideoDropdown() {
+            videoSelect.innerHTML = '';
+            
+            if (availableVideos.length === 0) {
+                videoSelect.innerHTML = '<option value="">No videos found</option>';
+                noVideoDiv.style.display = 'block';
+                return;
+            }
+            
+            videoSelect.innerHTML = '<option value="">-- Select a video --</option>';
+            
+            // Group videos by directory
+            const grouped = {};
+            availableVideos.forEach(video => {
+                const dir = video.directory || 'Unknown';
+                if (!grouped[dir]) grouped[dir] = [];
+                grouped[dir].push(video);
+            });
+            
+            // Add videos to dropdown, grouped by directory
+            Object.keys(grouped).sort().forEach(dir => {
+                if (Object.keys(grouped).length > 1) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = dir;
+                    
+                    grouped[dir].forEach(video => {
+                        const option = document.createElement('option');
+                        option.value = video.path;
+                        option.textContent = video.filename;
+                        option.dataset.metadataPath = video.metadataPath;
+                        
+                        // Add additional info if available
+                        if (video.generatedAt) {
+                            const date = new Date(video.generatedAt);
+                            option.textContent += ` (${date.toLocaleDateString()})`;
+                        }
+                        
+                        optgroup.appendChild(option);
+                    });
+                    
+                    videoSelect.appendChild(optgroup);
+                } else {
+                    // Only one directory, don't use optgroup
+                    grouped[dir].forEach(video => {
+                        const option = document.createElement('option');
+                        option.value = video.path;
+                        option.textContent = video.label;
+                        option.dataset.metadataPath = video.metadataPath;
+                        videoSelect.appendChild(option);
+                    });
+                }
+            });
+            
+            // Auto-select first video if only one available
+            if (availableVideos.length === 1) {
+                videoSelect.selectedIndex = 1;
+                loadSelectedVideo();
+            }
+        }
+        
+        async function loadSelectedVideo() {
+            const selectedPath = videoSelect.value;
+            
+            if (!selectedPath) {
+                videoContainer.style.display = 'none';
+                noVideoDiv.style.display = 'block';
+                metadataDiv.style.display = 'none';
+                document.getElementById('conversionPanel').style.display = 'none';
+                return;
+            }
+            
+            // Load video
+            videoContainer.style.display = 'block';
+            noVideoDiv.style.display = 'none';
+            // Fix path for videos when accessed from /viewers/ directory
+            const videoSrc = selectedPath.startsWith('/') ? selectedPath : '../' + selectedPath;
+            videoPlayer.src = videoSrc;
+            
+            // Load metadata
+            const selectedOption = videoSelect.selectedOptions[0];
+            const metadataPath = selectedOption.dataset.metadataPath;
+            
+            metadataDiv.style.display = 'block';
+            await loadMetadata(metadataPath);
+            
+            // Show conversion panel only for WebM videos
+            if (selectedPath.endsWith('.webm')) {
+                document.getElementById('conversionPanel').style.display = 'block';
+                currentVideoFile = selectedPath.split('/').pop();
+            } else {
+                document.getElementById('conversionPanel').style.display = 'none';
+            }
+        }
+        
+        async function loadMetadata(metadataPath) {
+            try {
+                // Fix path for metadata when accessed from /viewers/ directory
+                const fixedMetadataPath = metadataPath.startsWith('/') ? metadataPath : '../' + metadataPath;
+                const response = await fetch(fixedMetadataPath);
+                if (!response.ok) {
+                    throw new Error('Metadata file not found');
+                }
+                
+                const metadata = await response.json();
+                
+                const formatTime = (seconds) => {
+                    if (seconds < 60) {
+                        return `${seconds.toFixed(1)} seconds`;
+                    }
+                    const minutes = Math.floor(seconds / 60);
+                    const secs = (seconds % 60).toFixed(1);
+                    return `${minutes}m ${secs}s`;
+                };
+                
+                const formatSize = (mb) => {
+                    if (mb < 1) {
+                        return `${(mb * 1024).toFixed(0)} KB`;
+                    }
+                    return `${mb.toFixed(1)} MB`;
+                };
+                
+                const html = `
+                    <h2>Video Generation Metadata</h2>
+                    <table>
+                        <tr>
+                            <td>Generation Time:</td>
+                            <td>${formatTime(metadata.generationTime)}</td>
+                        </tr>
+                        <tr>
+                            <td>Processing Speed:</td>
+                            <td>${metadata.processingSpeed.toFixed(1)} fps</td>
+                        </tr>
+                        <tr>
+                            <td>Generation Time Ratio:</td>
+                            <td>${metadata.generationTimeRatio ? metadata.generationTimeRatio.toFixed(2) + 'x' : 'N/A'} ${metadata.generationTimeRatio ? `(${formatTime(metadata.generationTime)} to generate ${metadata.duration}s video)` : ''}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Frames:</td>
+                            <td>${metadata.totalFrames} frames</td>
+                        </tr>
+                        <tr>
+                            <td>Captured Frames:</td>
+                            <td>${metadata.capturedFrames} frames</td>
+                        </tr>
+                        <tr>
+                            <td>Skipped Frames:</td>
+                            <td>${metadata.skippedFrames} frames</td>
+                        </tr>
+                        <tr>
+                            <td>Video Duration:</td>
+                            <td>${metadata.duration} seconds @ ${metadata.fps}fps</td>
+                        </tr>
+                        <tr>
+                            <td>Video Resolution:</td>
+                            <td>${metadata.width}x${metadata.height}</td>
+                        </tr>
+                        <tr>
+                            <td>File Size:</td>
+                            <td>${formatSize(metadata.fileSize)}</td>
+                        </tr>
+                        <tr>
+                            <td>Codec:</td>
+                            <td>${metadata.codec.toUpperCase()} with alpha channel</td>
+                        </tr>
+                        <tr>
+                            <td>Quality (CRF):</td>
+                            <td>${metadata.quality}</td>
+                        </tr>
+                        <tr>
+                            <td>Generated:</td>
+                            <td>${new Date(metadata.timestamp).toLocaleString()}</td>
+                        </tr>
+                    </table>
+                `;
+                
+                metadataDiv.innerHTML = html;
+                
+            } catch (error) {
+                metadataDiv.innerHTML = `
+                    <h2>Video Generation Metadata</h2>
+                    <div class="error">
+                        No metadata available for this video
+                    </div>
+                `;
+            }
+        }
+        
+        // Event listeners
+        videoSelect.addEventListener('change', loadSelectedVideo);
+        
+        // Load video registry on page load
+        loadVideoRegistry();
+        
+        // Also check URL parameters for direct video loading
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoPath = urlParams.get('video');
+        if (videoPath) {
+            // Wait for registry to load, then add direct link if needed
+            setTimeout(() => {
+                const exists = availableVideos.some(v => v.path === videoPath);
+                if (!exists) {
+                    availableVideos.push({
+                        path: videoPath,
+                        filename: videoPath.split('/').pop(),
+                        label: videoPath.split('/').pop() + ' (Direct Link)',
+                        metadataPath: videoPath.replace('.webm', '.metadata.json')
+                    });
+                    updateVideoDropdown();
+                }
+                videoSelect.value = videoPath;
+                loadSelectedVideo();
+            }, 1000);
+        }
+
+        // Conversion functionality
+        async function startConversion(format) {
+            if (!currentVideoFile) {
+                showAlert('error', 'No video selected for conversion');
+                return;
+            }
+
+            try {
+                // Disable conversion buttons
+                document.getElementById('mp4Btn').disabled = true;
+                document.getElementById('movBtn').disabled = true;
+                
+                // Show progress
+                document.getElementById('conversionProgress').style.display = 'block';
+                document.getElementById('downloadLinks').style.display = 'none';
+                
+                // Reset progress
+                document.getElementById('conversionProgressFill').style.width = '0%';
+                document.getElementById('conversionProgressText').textContent = `Starting ${format.toUpperCase()} conversion...`;
+
+                const response = await fetch(`/api/convert/${currentVideoFile}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ format })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Start monitoring conversion progress
+                    monitorConversionProgress(result.jobId, result.outputFilename);
+                } else {
+                    showAlert('error', result.error || 'Failed to start conversion');
+                    resetConversionUI();
+                }
+
+            } catch (error) {
+                showAlert('error', 'Failed to start conversion: ' + error.message);
+                resetConversionUI();
+            }
+        }
+
+        function monitorConversionProgress(jobId, outputFilename) {
+            if (conversionEventSource) {
+                conversionEventSource.close();
+            }
+
+            conversionEventSource = new EventSource(`/api/progress/${jobId}`);
+            
+            conversionEventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateConversionProgress(data, outputFilename);
+            };
+
+            conversionEventSource.onerror = function(error) {
+                console.error('Conversion SSE error:', error);
+                if (conversionEventSource.readyState === EventSource.CLOSED) {
+                    setTimeout(() => {
+                        if (jobId) {
+                            monitorConversionProgress(jobId, outputFilename);
+                        }
+                    }, 2000);
+                }
+            };
+        }
+
+        function updateConversionProgress(data, outputFilename) {
+            const { status, progress, message, error } = data;
+            
+            if (status === 'converting') {
+                document.getElementById('conversionProgressFill').style.width = progress + '%';
+                document.getElementById('conversionProgressText').textContent = message || 'Converting...';
+            } else if (status === 'completed') {
+                document.getElementById('conversionProgressFill').style.width = '100%';
+                document.getElementById('conversionProgressText').textContent = message || 'Conversion completed!';
+                
+                // Show download link
+                showDownloadLink(outputFilename);
+                showAlert('success', `Conversion completed! File: ${outputFilename}`);
+                
+                resetConversionUI();
+                conversionEventSource.close();
+            } else if (status === 'failed') {
+                showAlert('error', error || 'Conversion failed');
+                resetConversionUI();
+                conversionEventSource.close();
+            }
+        }
+
+        function showDownloadLink(filename) {
+            const downloadLinks = document.getElementById('downloadLinks');
+            const format = filename.split('.').pop().toUpperCase();
+            
+            downloadLinks.innerHTML = `
+                <a href="../output/${filename}" download="${filename}" class="download-link">
+                    💾 Download ${format} (${filename})
+                </a>
+            `;
+            downloadLinks.style.display = 'block';
+        }
+
+        function resetConversionUI() {
+            // Re-enable conversion buttons
+            document.getElementById('mp4Btn').disabled = false;
+            document.getElementById('movBtn').disabled = false;
+            
+            // Hide progress after a delay
+            setTimeout(() => {
+                document.getElementById('conversionProgress').style.display = 'none';
+            }, 3000);
+        }
+
+        function showAlert(type, message) {
+            const alertId = type === 'error' ? 'errorAlert' : 'successAlert';
+            const alertEl = document.getElementById(alertId);
+            
+            // Hide other alert
+            const otherAlertId = type === 'error' ? 'successAlert' : 'errorAlert';
+            document.getElementById(otherAlertId).style.display = 'none';
+            
+            alertEl.textContent = message;
+            alertEl.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                alertEl.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

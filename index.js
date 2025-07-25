@@ -304,6 +304,11 @@ module.exports = async function(config) {
       });
     }
     
+    // Call progress callback if provided
+    if (config.onProgress && typeof config.onProgress === 'function') {
+      config.onProgress(actualFramesCaptured, totalFrames, captureRate, elapsed);
+    }
+    
     // Send progress webhook (every 10% or 50 frames, whichever is less frequent)
     const progressInterval = Math.max(Math.floor(totalFrames * 0.1), 50);
     if (config.webhookUrl && actualFramesCaptured % progressInterval === 0) {

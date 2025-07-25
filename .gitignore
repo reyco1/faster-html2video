@@ -35,5 +35,4 @@ batch-output/
 # Local development tools
 update-registry.js
 video-registry.json
-viewers/
 CLAUDE.md
