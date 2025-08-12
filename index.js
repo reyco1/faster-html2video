@@ -10,6 +10,7 @@ const { spawn } = require('child_process');
 const cliProgress = require('cli-progress');
 const { overwriteTime, goToTimeAndAnimateForCapture } = require('./lib/virtual-time');
 const { sendWebhook, createWebhookPayload, WEBHOOK_EVENTS } = require('./lib/webhook');
+const { getOptimizedFFmpegArgs, detectHardwareCapabilities, getOptimizedGenerationArgs } = require('./lib/gpu-acceleration');
 
 const defaultFPS = 60;
 const defaultDuration = 5;
@@ -156,19 +157,19 @@ module.exports = async function(config) {
     }
   }, config.selector || 'body');
 
-  // Start FFmpeg process
-  const ffmpegArgs = [
-    '-y',
-    '-f', 'image2pipe',
-    '-framerate', fps,
-    '-i', '-',
-    '-c:v', 'libvpx-vp9',
-    '-pix_fmt', config.pixFmt,
-    '-crf', config.quality,
-    '-b:v', '0',
-    '-threads', '4',
-    output
-  ];
+  // Start FFmpeg process with GPU acceleration
+  const generationConfig = getOptimizedGenerationArgs(
+    output, 
+    fps, 
+    config.width, 
+    config.height, 
+    config.pixFmt, 
+    config.quality, 
+    config.accelerationMethod
+  );
+  const ffmpegArgs = generationConfig.args;
+
+  log(`Using ${generationConfig.profile} for HTML-to-video generation`);
 
   ffmpeg = spawn('ffmpeg', ffmpegArgs);
   let ffmpegError = null;

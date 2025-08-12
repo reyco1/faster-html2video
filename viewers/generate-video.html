@@ -545,6 +545,12 @@
                     <!-- Conversion Options -->
                     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
                         <h4 style="margin-bottom: 15px; color: var(--text);">🔄 Convert to Other Formats</h4>
+                        <div style="margin-bottom: 10px;">
+                            <label style="font-weight: 600; margin-right: 10px; color: var(--text);">Hardware Acceleration:</label>
+                            <select id="convertAcceleration" style="padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text);">
+                                <option value="auto">🚀 Auto (Recommended)</option>
+                            </select>
+                        </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <button class="btn btn-secondary" onclick="convertVideo('mp4')" id="convertMp4Btn">
                                 🎬 Convert to MP4
@@ -590,6 +596,7 @@
             loadRecentVideos();
             setupEventListeners();
             loadTheme();
+            loadHardwareCapabilities();
         });
 
         function setupEventListeners() {
@@ -1029,6 +1036,48 @@
             toggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
         }
 
+        // Load hardware capabilities
+        async function loadHardwareCapabilities() {
+            try {
+                const response = await fetch('/api/hardware-capabilities');
+                const capabilities = await response.json();
+                
+                // Update acceleration dropdown
+                const select = document.getElementById('convertAcceleration');
+                if (select) {
+                    select.innerHTML = '<option value="auto">🚀 Auto (Recommended)</option>';
+                    
+                    if (capabilities.available) {
+                        capabilities.available.forEach(method => {
+                            if (method !== 'cpu') {
+                                const option = document.createElement('option');
+                                option.value = method;
+                                
+                                const names = {
+                                    nvenc: '🎮 NVIDIA NVENC',
+                                    videotoolbox: '🍎 Apple VideoToolbox',
+                                    qsv: '💻 Intel Quick Sync',
+                                    amf: '🔴 AMD AMF'
+                                };
+                                
+                                option.textContent = names[method] || method.toUpperCase();
+                                select.appendChild(option);
+                            }
+                        });
+                        
+                        // Add CPU option
+                        const cpuOption = document.createElement('option');
+                        cpuOption.value = 'cpu';
+                        cpuOption.textContent = '⚙️ CPU Only';
+                        select.appendChild(cpuOption);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Failed to load hardware capabilities:', error);
+            }
+        }
+
         // Video conversion functionality
         let conversionEventSource = null;
 
@@ -1051,12 +1100,19 @@
                 document.getElementById('conversionProgress').style.width = '0%';
                 document.getElementById('conversionMessage').textContent = `Starting ${format.toUpperCase()} conversion...`;
 
+                // Get selected acceleration method
+                const accelerationMethod = document.getElementById('convertAcceleration').value;
+                const payload = { format };
+                if (accelerationMethod !== 'auto') {
+                    payload.accelerationMethod = accelerationMethod;
+                }
+
                 const response = await fetch(`/api/convert/${filename}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ format })
+                    body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();

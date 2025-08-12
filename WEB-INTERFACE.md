@@ -152,8 +152,66 @@ eventSource.onmessage = (event) => {
 ### Technical Details
 - Uses FFmpeg with optimized encoding settings
 - H.264 codec with YUV420P pixel format for maximum compatibility
-- Medium encoding preset balances speed and quality
+- GPU hardware acceleration with automatic fallback to CPU
+- Optimized presets for each acceleration method
 - Automatic cleanup of temporary files
+
+## GPU Hardware Acceleration
+
+The web interface includes comprehensive GPU acceleration support for dramatically faster video conversion.
+
+### Supported Hardware Accelerators
+
+#### 🎮 **NVIDIA NVENC** (Fastest)
+- **Performance**: Up to 10x faster than CPU
+- **Requirements**: NVIDIA GTX 600 series or newer
+- **Best for**: High-resolution, high-framerate conversions
+
+#### 🍎 **Apple VideoToolbox** 
+- **Performance**: 6-7x faster than CPU
+- **Requirements**: macOS with Apple Silicon or Intel with T2 chip
+- **Best for**: Mac users with modern hardware
+
+#### 💻 **Intel Quick Sync Video (QSV)**
+- **Performance**: 5x faster than CPU
+- **Requirements**: Intel processors with integrated graphics (7th gen+)
+- **Best for**: Intel systems with integrated graphics
+
+#### 🔴 **AMD AMF**
+- **Performance**: 4x faster than CPU
+- **Requirements**: AMD Radeon graphics cards
+- **Best for**: AMD GPU users
+
+#### ⚙️ **CPU Fallback**
+- **Performance**: Baseline speed
+- **Requirements**: Any system with FFmpeg
+- **Best for**: Maximum compatibility and quality
+
+### How It Works
+
+1. **Automatic Detection**: System detects available hardware at startup
+2. **Smart Selection**: Auto-selects fastest available encoder
+3. **Manual Override**: Users can force specific acceleration methods
+4. **Graceful Fallback**: Falls back to CPU if GPU encoding fails
+
+### Performance Benefits
+
+| Method | Speed Improvement | Use Case |
+|--------|------------------|----------|
+| NVIDIA NVENC | **10x faster** | Gaming/Professional workstations |
+| Apple VideoToolbox | **6-7x faster** | Mac users (M1/M2/Intel+T2) |
+| Intel QSV | **5x faster** | Business laptops/desktops |
+| AMD AMF | **4x faster** | AMD graphics users |
+| CPU (libx264) | **1x (baseline)** | Maximum compatibility |
+
+### Usage
+
+Both video interfaces include hardware acceleration dropdowns:
+- **Auto (Recommended)**: System selects best available
+- **Specific GPU**: Force particular acceleration method
+- **CPU Only**: Disable hardware acceleration
+
+The system automatically uses optimized settings for each acceleration method while maintaining quality.
 
 ## File Structure
 

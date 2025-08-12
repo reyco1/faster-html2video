@@ -281,6 +281,14 @@
             <div class="alert alert-success" id="successAlert"></div>
             <div class="alert alert-error" id="errorAlert"></div>
             
+            <div style="margin-bottom: 15px;">
+                <label for="accelerationSelect" style="font-weight: bold; margin-right: 10px;">Hardware Acceleration:</label>
+                <select id="accelerationSelect" style="padding: 5px 10px; border-radius: 4px; border: 1px solid #ddd;">
+                    <option value="auto">🚀 Auto (Recommended)</option>
+                </select>
+                <span id="accelerationInfo" style="margin-left: 10px; font-size: 12px; color: #666;"></span>
+            </div>
+            
             <div class="conversion-options">
                 <button class="convert-btn mp4" onclick="startConversion('mp4')" id="mp4Btn">
                     🎬 Convert to MP4
@@ -312,6 +320,7 @@
         let availableVideos = [];
         let currentVideoFile = null;
         let conversionEventSource = null;
+        let hardwareCapabilities = null;
         
         async function loadVideoRegistry() {
             try {
@@ -595,8 +604,9 @@
         // Event listeners
         videoSelect.addEventListener('change', loadSelectedVideo);
         
-        // Load video registry on page load
+        // Load video registry and hardware capabilities on page load
         loadVideoRegistry();
+        loadHardwareCapabilities();
         
         // Also check URL parameters for direct video loading
         const urlParams = new URLSearchParams(window.location.search);
@@ -619,6 +629,62 @@
             }, 1000);
         }
 
+        // Load hardware capabilities
+        async function loadHardwareCapabilities() {
+            try {
+                const response = await fetch('/api/hardware-capabilities');
+                hardwareCapabilities = await response.json();
+                
+                // Update acceleration dropdown
+                const select = document.getElementById('accelerationSelect');
+                select.innerHTML = '<option value="auto">🚀 Auto (Recommended)</option>';
+                
+                if (hardwareCapabilities.available) {
+                    hardwareCapabilities.available.forEach(method => {
+                        if (method !== 'cpu') {
+                            const option = document.createElement('option');
+                            option.value = method;
+                            
+                            const names = {
+                                nvenc: '🎮 NVIDIA NVENC',
+                                videotoolbox: '🍎 Apple VideoToolbox',
+                                qsv: '💻 Intel Quick Sync',
+                                amf: '🔴 AMD AMF'
+                            };
+                            
+                            option.textContent = names[method] || method.toUpperCase();
+                            select.appendChild(option);
+                        }
+                    });
+                    
+                    // Add CPU option
+                    const cpuOption = document.createElement('option');
+                    cpuOption.value = 'cpu';
+                    cpuOption.textContent = '⚙️ CPU Only';
+                    select.appendChild(cpuOption);
+                }
+                
+                // Show recommended acceleration
+                const info = document.getElementById('accelerationInfo');
+                if (hardwareCapabilities.recommended && hardwareCapabilities.recommended !== 'cpu') {
+                    const names = {
+                        nvenc: 'NVIDIA GPU',
+                        videotoolbox: 'Apple Silicon/Intel',
+                        qsv: 'Intel GPU',
+                        amf: 'AMD GPU'
+                    };
+                    info.textContent = `Detected: ${names[hardwareCapabilities.recommended] || hardwareCapabilities.recommended}`;
+                    info.style.color = '#4CAF50';
+                } else {
+                    info.textContent = 'No GPU acceleration detected';
+                    info.style.color = '#666';
+                }
+                
+            } catch (error) {
+                console.error('Failed to load hardware capabilities:', error);
+            }
+        }
+
         // Conversion functionality
         async function startConversion(format) {
             if (!currentVideoFile) {
@@ -639,12 +705,19 @@
                 document.getElementById('conversionProgressFill').style.width = '0%';
                 document.getElementById('conversionProgressText').textContent = `Starting ${format.toUpperCase()} conversion...`;
 
+                // Get selected acceleration method
+                const accelerationMethod = document.getElementById('accelerationSelect').value;
+                const payload = { format };
+                if (accelerationMethod !== 'auto') {
+                    payload.accelerationMethod = accelerationMethod;
+                }
+
                 const response = await fetch(`/api/convert/${currentVideoFile}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ format })
+                    body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();

@@ -7,6 +7,12 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const capture = require('./index');
+const { 
+  detectHardwareCapabilities, 
+  getOptimizedFFmpegArgs, 
+  getPerformanceEstimate,
+  initializeHardwareDetection 
+} = require('./lib/gpu-acceleration');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -321,12 +327,24 @@ app.get('/api/metadata/:filename', (req, res) => {
 });
 
 /**
+ * Get hardware acceleration capabilities
+ */
+app.get('/api/hardware-capabilities', async (req, res) => {
+  try {
+    const capabilities = await detectHardwareCapabilities();
+    res.json(capabilities);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to detect hardware capabilities' });
+  }
+});
+
+/**
  * Convert video to different format
  */
 app.post('/api/convert/:filename', async (req, res) => {
   try {
     const filename = req.params.filename;
-    const { format } = req.body; // 'mp4' or 'mov'
+    const { format, accelerationMethod } = req.body; // 'mp4' or 'mov', optional acceleration method
     
     if (!['mp4', 'mov'].includes(format)) {
       return res.status(400).json({ error: 'Unsupported format. Use mp4 or mov.' });
@@ -353,6 +371,7 @@ app.post('/api/convert/:filename', async (req, res) => {
       outputPath,
       outputFilename,
       format,
+      accelerationMethod,
       startTime: Date.now(),
       clients: new Set()
     };
@@ -413,34 +432,19 @@ app.delete('/api/video/:filename', (req, res) => {
 async function convertVideo(job) {
   try {
     job.status = 'converting';
-    broadcastJobUpdate(job, `Converting to ${job.format.toUpperCase()}...`);
     
-    // FFmpeg arguments for conversion
-    let ffmpegArgs;
+    // Get optimized FFmpeg arguments with GPU acceleration
+    const { args: ffmpegArgs, profile, method } = getOptimizedFFmpegArgs(
+      job.inputPath, 
+      job.outputPath, 
+      job.format,
+      job.accelerationMethod // Allow manual override
+    );
     
-    if (job.format === 'mp4') {
-      ffmpegArgs = [
-        '-y', // Overwrite output files
-        '-i', job.inputPath,
-        '-c:v', 'libx264', // H.264 codec
-        '-preset', 'medium', // Encoding speed preset
-        '-crf', '23', // Quality (same as original)
-        '-pix_fmt', 'yuv420p', // Pixel format compatible with most players
-        '-movflags', '+faststart', // Enable fast start for web playback
-        job.outputPath
-      ];
-    } else if (job.format === 'mov') {
-      ffmpegArgs = [
-        '-y', // Overwrite output files
-        '-i', job.inputPath,
-        '-c:v', 'libx264', // H.264 codec for QuickTime
-        '-preset', 'medium',
-        '-crf', '23',
-        '-pix_fmt', 'yuv420p',
-        '-f', 'mov', // Force MOV format
-        job.outputPath
-      ];
-    }
+    job.accelerationUsed = method;
+    job.accelerationProfile = profile;
+    
+    broadcastJobUpdate(job, `Converting to ${job.format.toUpperCase()} using ${profile}...`);
     
     const ffmpeg = spawn('ffmpeg', ffmpegArgs);
     let conversionOutput = '';
@@ -632,15 +636,21 @@ app.use((error, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Fast HTML2Video Server running at http://localhost:${PORT}`);
   console.log(`📁 Serving files from: ${process.cwd()}`);
+  
+  // Initialize hardware detection
+  await initializeHardwareDetection();
+  
   console.log('📋 Available endpoints:');
   console.log('   • GET  /viewers/generate-video.html - Video generation interface');
   console.log('   • GET  /viewers/view-video.html - Video viewer interface');
   console.log('   • GET  /api/html-files - List available HTML files');
+  console.log('   • GET  /api/hardware-capabilities - Hardware acceleration info');
   console.log('   • POST /api/upload - Upload HTML file');
   console.log('   • POST /api/generate - Start video generation');
   console.log('   • GET  /api/progress/:jobId - Real-time progress (SSE)');
   console.log('   • GET  /api/videos - List generated videos');
+  console.log('   • POST /api/convert/:filename - Convert video with GPU acceleration');
 });
